@@ -1,16 +1,16 @@
 #!/bin/bash
 
 # Navigate to the enpal-modbus directory
-cd enpal-modbus
+cd enpal-link
 
 # Pull the latest changes from the repository
 git pull
 
 # Build the Docker image
-docker build -t michaelantonfischer/enpal-modbus .
+docker build -t michaelantonfischer/enpal-link:latest .
 
 # Push the Docker image to the repository
-docker push michaelantonfischer/enpal-modbus
+docker push michaelantonfischer/enpal-link:latest
 
 # Navigate back to the parent directory
 cd ..
