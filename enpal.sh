@@ -1,70 +1,65 @@
-#!/bin/sh
-# Zugangsdaten InfluxDB
-INFLUX_API="http://${INFLUX_HOST}:8086/api/v2/query?orgID=${INFLUX_ORG_ID}"
-QUERY_RANGE_START="-5m"
+import os
+import requests
+import pandas as pd
+from io import StringIO
+import time
+import logging
 
-# Function to output the whole bucket
-output_whole_bucket() {
-  echo "$(date '+%Y-%m-%d %H:%M:%S') - Starting data query..." >> /var/log/enpal.log
-  echo "INFLUX_API: ${INFLUX_API}"  # Debug statement
-  echo "INFLUX_TOKEN: ${INFLUX_TOKEN}"  # Debug statement
-  echo "INFLUX_BUCKET: ${INFLUX_BUCKET}"  # Debug statement
-  echo "INFLUX_ORG_ID: ${INFLUX_ORG_ID}"  # Debug statement
-  echo "QUERY_RANGE_START: ${QUERY_RANGE_START}"  # Debug statement
+# Configure logging
+logging.basicConfig(filename='/var/log/enpal.log', level=logging.INFO, format='%(asctime)s - %(message)s')
 
-  # Perform the curl request and capture the HTTP response headers and body separately
-  response=$(curl -s -w "\n%{http_code}" -X POST "${INFLUX_API}" \
-    --header "Authorization: Token ${INFLUX_TOKEN}" \
-    --header "Accept: application/json" \
-    --header "Content-type: application/json" \
-    --data-binary @- <<EOF
-{
-  "type": "flux",
-  "query": "from(bucket: \\"${INFLUX_BUCKET}\\") |> range(start: ${QUERY_RANGE_START}) |> last()",
-  "orgID": "${INFLUX_ORG_ID}"
-}
-EOF
-)
-  status="$?"
-  http_code=$(echo "$response" | tail -n1)
-  body=$(echo "$response" | sed '$d')
+# Read environment variables
+INFLUX_API = os.getenv("INFLUX_API")
+INFLUX_TOKEN = os.getenv("INFLUX_TOKEN")
+INFLUX_BUCKET = os.getenv("INFLUX_BUCKET")
+INFLUX_ORG_ID = os.getenv("INFLUX_ORG_ID")
+QUERY_RANGE_START = os.getenv("QUERY_RANGE_START", "-5m")  # Default to -5m if not set
 
-  echo "Curl status: $status"  # Debug statement
-  echo "HTTP code: $http_code"  # Debug statement
-  echo "Curl output: $body"  # Debug statement
+def output_whole_bucket():
+    logging.info("Starting data query...")
+    logging.debug(f"INFLUX_API: {INFLUX_API}")
+    logging.debug(f"INFLUX_TOKEN: {INFLUX_TOKEN}")
+    logging.debug(f"INFLUX_BUCKET: {INFLUX_BUCKET}")
+    logging.debug(f"INFLUX_ORG_ID: {INFLUX_ORG_ID}")
+    logging.debug(f"QUERY_RANGE_START: {QUERY_RANGE_START}")
 
-  if [ "$status" -eq 0 ] && [ "$http_code" -eq 200 ]; then
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - Data query successful." >> /var/log/enpal.log
+    query = f"""
+    {{
+      "type": "flux",
+      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> last()",
+      "orgID": "{INFLUX_ORG_ID}"
+    }}
+    """
 
-    # Parse the CSV response and format the output
-    echo "$body" | tail -n +2 | while IFS=, read -r result table _start _stop _time _value _field _measurement unit; do
-      echo "Time: $_time"
-      echo "Value: $_value"
-      echo "Field: $_field"
-      echo "Measurement: $_measurement"
-      echo "Unit: $unit"
-      echo "-------------------"
-    done
-  else
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - Data query failed with status $status and HTTP code $http_code." >> /var/log/enpal.log
-  fi
-  return "$status"
-}
+    headers = {
+        "Authorization": f"Token {INFLUX_TOKEN}",
+        "Accept": "application/json",
+        "Content-type": "application/json"
+    }
 
-# Debug: Print a message indicating the script has started
-echo "Script started"
+    response = requests.post(INFLUX_API, headers=headers, data=query)
+    logging.debug(f"Curl status: {response.status_code}")
+    logging.debug(f"Curl output: {response.text}")
 
-# Run the script continuously
-while true; do
-  output_whole_bucket
-  sleep 60  # Wait for 1 minute before the next iteration
-done
+    if response.status_code == 200:
+        logging.info("Data query successful.")
+        # Parse the CSV response
+        data = StringIO(response.text)
+        df = pd.read_csv(data)
 
-# Debug: Print a message indicating the script has started
-echo "Script started"
+        # Display the fields and their values with units
+        for index, row in df.iterrows():
+            print(f"Time: {row['_time']}")
+            print(f"Value: {row['_value']}")
+            print(f"Field: {row['_field']}")
+            print(f"Measurement: {row['_measurement']}")
+            print(f"Unit: {row['unit']}")
+            print("-------------------")
+    else:
+        logging.error(f"Data query failed with status {response.status_code}.")
 
-# Run the script continuously
-while true; do
-  output_whole_bucket
-  sleep 60  # Wait for 1 minute before the next iteration
-done
+if __name__ == "__main__":
+    logging.info("Script started")
+    while True:
+        output_whole_bucket()
+        time.sleep(60)  # Wait for 1 minute before the next iteration

@@ -1,17 +1,24 @@
-# Use a lightweight base image
-FROM alpine:latest
+# Use an official Python runtime as a parent image
+FROM python:3.9-slim
 
-# Install necessary packages
-RUN apk add --no-cache bash curl jq
+# Set the working directory in the container
+WORKDIR /usr/src/app
 
-# Copy the script into the container
-COPY enpal.sh /usr/local/bin/enpal.sh
+# Copy the current directory contents into the container at /usr/src/app
+COPY . .
 
-# Make the script executable
-RUN chmod +x /usr/local/bin/enpal.sh
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose port 502 for Modbus communication
-EXPOSE 502
+# Make port 80 available to the world outside this container
+EXPOSE 80
 
-# Set the entrypoint to the script with the whole_bucket argument
-ENTRYPOINT ["/usr/local/bin/enpal.sh", "whole_bucket"]
+# Define environment variables
+ENV INFLUX_API=""
+ENV INFLUX_TOKEN=""
+ENV INFLUX_BUCKET=""
+ENV INFLUX_ORG_ID=""
+ENV QUERY_RANGE_START="-5m"
+
+# Run app.py when the container launches
+CMD ["python", "./enpal.py"]
