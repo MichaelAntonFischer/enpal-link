@@ -8,12 +8,6 @@ INFLUX_TOKEN="YOUR_INFLUX_TOKEN"
 INFLUX_API="${INFLUX_HOST}/api/v2/query?orgID=${INFLUX_ORG_ID}"
 QUERY_RANGE_START="-5m"
 
-# Zugangsdaten Powerfox Poweropti
-# @see https://www.powerfox.energy/daten-von-powerfox-per-api-nutzen/
-POWERFOX_USERNAME="POWERFOX_USERNAME"
-POWERFOX_PASSWORD="POWERFOX_PASSWORD"
-POWERFOX_DEVICE_ID="POWERFOX_DEVICE_ID"
-
 case $1 in
 # Output the whole bucket
 whole_bucket)
