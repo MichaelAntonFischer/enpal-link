@@ -1,0 +1,9 @@
+{
+    "name": "Enpal Solar Surplus Meter",
+    "type": "HTTP/JSON",
+    "url": "http://192.168.50.23:5000/solar_power_surplus",
+    "query": {
+      "power_w": "solar_power_surplus"
+    },
+    "interval": 10
+  }
