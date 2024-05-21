@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configure logging
-logging.basicConfig(filename='/var/log/enpal.log', level=logging.DEBUG, format='%(asctime)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(message)s')
 
 # Read environment variables
 INFLUX_HOST = os.getenv("INFLUX_HOST")
