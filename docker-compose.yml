@@ -1,4 +1,4 @@
-version: '3.8'
+version: '2.27'
 
 services:
   enpal:
@@ -9,8 +9,8 @@ services:
     env_file:
       - .env
     networks:
-      - enpal-modbus-network
+      - enpal-modbus
 
 networks:
-  enpal-modbus-network:
+  enpal-modbus:
     driver: bridge
