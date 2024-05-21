@@ -71,7 +71,7 @@ def fetch_solar_power_surplus():
         # Extract the latest value (assuming it's the solar power surplus)
         latest_value = df['_value'].iloc[-1]
         logging.debug(f"Latest solar power surplus: {latest_value}")
-        return int(latest_value)  # Convert to standard Python integer
+        return float(latest_value)  # Convert to standard Python float
     else:
         logging.error(f"Data query failed with status {response.status_code}.")
         return None
