@@ -1,4 +1,4 @@
 requests
 pandas
 pymodbus
-sunspec2
+sunspec
