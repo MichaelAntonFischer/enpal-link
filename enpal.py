@@ -9,11 +9,21 @@ import logging
 logging.basicConfig(filename='/var/log/enpal.log', level=logging.INFO, format='%(asctime)s - %(message)s')
 
 # Read environment variables
-INFLUX_API = os.getenv("INFLUX_API")
+INFLUX_HOST = os.getenv("INFLUX_HOST")
 INFLUX_TOKEN = os.getenv("INFLUX_TOKEN")
 INFLUX_BUCKET = os.getenv("INFLUX_BUCKET")
 INFLUX_ORG_ID = os.getenv("INFLUX_ORG_ID")
 QUERY_RANGE_START = os.getenv("QUERY_RANGE_START", "-5m")  # Default to -5m if not set
+
+# Construct the INFLUX_API URL
+INFLUX_API = f"http://{INFLUX_HOST}:8086/api/v2/query?orgID={INFLUX_ORG_ID}"
+
+# Log the environment variables for debugging
+logging.info(f"INFLUX_API: {INFLUX_API}")
+logging.info(f"INFLUX_TOKEN: {INFLUX_TOKEN}")
+logging.info(f"INFLUX_BUCKET: {INFLUX_BUCKET}")
+logging.info(f"INFLUX_ORG_ID: {INFLUX_ORG_ID}")
+logging.info(f"QUERY_RANGE_START: {QUERY_RANGE_START}")
 
 def output_whole_bucket():
     logging.info("Starting data query...")
