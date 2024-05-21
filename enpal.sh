@@ -20,7 +20,7 @@ output_whole_bucket() {
     --data-binary @- <<EOF
 {
   "type": "flux",
-  "query": "from(bucket: \\"${INFLUX_BUCKET}\\") |> range(start: ${QUERY_RANGE_START})"
+  "query": "from(bucket: \\"${INFLUX_BUCKET}\\") |> range(start: ${QUERY_RANGE_START}) |> filter(fn: (r) => r._measurement == \\"numberDataPoints\\") |> filter(fn: (r) => r._field == \\"Power.Production.Total\\") |> keep(columns: [\\"_time\\", \\"_value\\", \\"_field\\"]) |> last()"
 }
 EOF
 )
