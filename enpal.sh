@@ -18,6 +18,8 @@ output_whole_bucket() {
     --data "from(bucket: \"$INFLUX_BUCKET\")
             |> range(start: $QUERY_RANGE_START)")
   status="$?"
+  echo "Curl status: $status"  # Debug statement
+  echo "Curl output: $var"  # Debug statement
   if [ "$status" -eq 0 ]; then
     echo "$(date '+%Y-%m-%d %H:%M:%S') - Data query successful." >> /var/log/enpal.log
   else
