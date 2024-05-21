@@ -1,9 +1,34 @@
 {
-    "name": "Enpal Solar Surplus Meter",
-    "rtype": 1,
-    "url": "http://192.168.50.23:5000/solar_power_surplus",
-    "query": {
-      "power_w": "solar_power_surplus"
+    "rtype": 1,  
+    "name": "Enpal Solar Surplus Meter", 
+    "manufacturer": "Enpal",
+    "dev_type": "solar_surplus", 
+    "delay_accumulated": false,  
+  
+    "type_designation": {
+      "address": "",
+      "type": "string",
+      "fixed": "Solar Surplus Meter"
     },
-    "interval": 10
+    "version": {
+      "address": "",
+      "type": "string",
+      "fixed": "1.0"
+    },
+    "firmware_version": {
+      "address": "",
+      "type": "string",
+      "fixed": "1.0"
+    },
+    "serial": {
+      "address": "",
+      "type": "string",
+      "fixed": "0"
+    },
+    "power_w": {
+      "address": "GET /solar_power_surplus",
+      "query": "solar_power_surplus",
+      "type": "float",
+      "resolution": 1.0
+    }
   }
