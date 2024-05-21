@@ -7,7 +7,6 @@ import logging
 from pymodbus.server import StartTcpServer
 from pymodbus.datastore import ModbusSequentialDataBlock, ModbusSlaveContext, ModbusServerContext
 from pymodbus.device import ModbusDeviceIdentification
-import sunspec2.modbus.client as client
 import sunspec2.device as device
 
 # Configure logging
