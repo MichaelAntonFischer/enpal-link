@@ -1,5 +1,3 @@
-pymodbus
 pandas
 requests
-pysunspec2
-pyserial
+flask

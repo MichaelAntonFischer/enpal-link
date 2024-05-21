@@ -11,7 +11,7 @@ COPY . .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Make port 502 available to the world outside this container
-EXPOSE 502
+EXPOSE 5000
 
 # Define environment variables
 ENV INFLUX_API=""
@@ -19,6 +19,8 @@ ENV INFLUX_TOKEN=""
 ENV INFLUX_BUCKET=""
 ENV INFLUX_ORG_ID=""
 ENV QUERY_RANGE_START="-5m"
+ENV HTTP_HOST="0.0.0.0"
+ENV HTTP_PORT="5000"
 
 # Run app.py when the container launches
 CMD ["python", "./enpal.py"]
