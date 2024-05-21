@@ -67,11 +67,16 @@ def fetch_solar_power_surplus():
         # Parse the CSV response
         data = StringIO(response.text)
         df = pd.read_csv(data)
+        logging.debug(f"DataFrame: {df}")
 
         # Extract the latest value (assuming it's the solar power surplus)
-        latest_value = df['_value'].iloc[-1]
-        logging.debug(f"Latest solar power surplus: {latest_value}")
-        return float(latest_value)  # Convert to standard Python float
+        if not df.empty and '_value' in df.columns:
+            latest_value = df['_value'].iloc[-1]
+            logging.debug(f"Latest solar power surplus: {latest_value}")
+            return float(latest_value)  # Convert to standard Python float
+        else:
+            logging.error("DataFrame is empty or '_value' column is missing.")
+            return None
     else:
         logging.error(f"Data query failed with status {response.status_code}.")
         return None
