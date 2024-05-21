@@ -1,16 +1,21 @@
-version: '2.27'
+version: '3'
 
 services:
   enpal:
-    image: michaelantonfischer/enpal-modbus
+    build: .
     container_name: enpal-modbus
     ports:
       - "502:502"
     env_file:
       - .env
     networks:
-      - enpal-modbus
+      - enpal-modbus-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
-  enpal-modbus:
+  enpal-modbus-network:
     driver: bridge
