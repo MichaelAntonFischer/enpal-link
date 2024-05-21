@@ -5,6 +5,10 @@ from io import StringIO
 import time
 import logging
 from flask import Flask, jsonify
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(filename='/var/log/enpal.log', level=logging.DEBUG, format='%(asctime)s - %(message)s')
@@ -22,18 +26,18 @@ HTTP_PORT = int(os.getenv("HTTP_PORT", 5000))
 INFLUX_API = f"http://{INFLUX_HOST}:8086/api/v2/query?orgID={INFLUX_ORG_ID}"
 
 # Log the environment variables for debugging
-logging.info(f"INFLUX_API: {INFLUX_API}")
-logging.info(f"INFLUX_TOKEN: {INFLUX_TOKEN}")
-logging.info(f"INFLUX_BUCKET: {INFLUX_BUCKET}")
-logging.info(f"INFLUX_ORG_ID: {INFLUX_ORG_ID}")
-logging.info(f"QUERY_RANGE_START: {QUERY_RANGE_START}")
-logging.info(f"HTTP_HOST: {HTTP_HOST}")
-logging.info(f"HTTP_PORT: {HTTP_PORT}")
+logging.debug(f"INFLUX_API: {INFLUX_API}")
+logging.debug(f"INFLUX_TOKEN: {INFLUX_TOKEN}")
+logging.debug(f"INFLUX_BUCKET: {INFLUX_BUCKET}")
+logging.debug(f"INFLUX_ORG_ID: {INFLUX_ORG_ID}")
+logging.debug(f"QUERY_RANGE_START: {QUERY_RANGE_START}")
+logging.debug(f"HTTP_HOST: {HTTP_HOST}")
+logging.debug(f"HTTP_PORT: {HTTP_PORT}")
 
 app = Flask(__name__)
 
 def fetch_solar_power_surplus():
-    logging.info("Starting data query...")
+    logging.debug("Starting data query...")
     logging.debug(f"INFLUX_API: {INFLUX_API}")
     logging.debug(f"INFLUX_TOKEN: {INFLUX_TOKEN}")
     logging.debug(f"INFLUX_BUCKET: {INFLUX_BUCKET}")
@@ -59,14 +63,14 @@ def fetch_solar_power_surplus():
     logging.debug(f"Curl output: {response.text}")
 
     if response.status_code == 200:
-        logging.info("Data query successful.")
+        logging.debug("Data query successful.")
         # Parse the CSV response
         data = StringIO(response.text)
         df = pd.read_csv(data)
 
         # Extract the latest value (assuming it's the solar power surplus)
         latest_value = df['_value'].iloc[-1]
-        logging.info(f"Latest solar power surplus: {latest_value}")
+        logging.debug(f"Latest solar power surplus: {latest_value}")
         return latest_value
     else:
         logging.error(f"Data query failed with status {response.status_code}.")
@@ -81,5 +85,5 @@ def get_solar_power_surplus():
         return jsonify({"error": "Failed to fetch data"}), 500
 
 if __name__ == "__main__":
-    logging.info("Script started")
-    app.run(host=HTTP_HOST, port=HTTP_PORT)
+    logging.debug("Script started")
+    app.run(host=HTTP_HOST, port=HTTP_PORT, debug=True)
