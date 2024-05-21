@@ -2,7 +2,7 @@ version: '3'
 
 services:
   enpal:
-    build: .
+    image: michaelantonfischer/enpal-modbus:latest
     container_name: enpal-modbus
     ports:
       - "502:502"
