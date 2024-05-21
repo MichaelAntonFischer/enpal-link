@@ -7,7 +7,7 @@ import logging
 from flask import Flask, jsonify
 
 # Configure logging
-logging.basicConfig(filename='/var/log/enpal.log', level=logging.INFO, format='%(asctime)s - %(message)s')
+logging.basicConfig(filename='/var/log/enpal.log', level=logging.DEBUG, format='%(asctime)s - %(message)s')
 
 # Read environment variables
 INFLUX_HOST = os.getenv("INFLUX_HOST")
@@ -43,7 +43,7 @@ def fetch_solar_power_surplus():
     query = f"""
     {{
       "type": "flux",
-      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"PowerToGrid\\") |> last()",
+      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Grid.Export\\") |> last()",
       "orgID": "{INFLUX_ORG_ID}"
     }}
     """
