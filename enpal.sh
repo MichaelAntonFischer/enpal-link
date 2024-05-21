@@ -16,8 +16,11 @@ output_whole_bucket() {
     --header "Authorization: Token ${INFLUX_TOKEN}" \
     --header "Accept: application/json" \
     --header "Content-type: application/vnd.flux" \
-    --data "from(bucket: \"$INFLUX_BUCKET\")
-            |> range(start: $QUERY_RANGE_START)")
+    --data-binary @- <<EOF
+from(bucket: "${INFLUX_BUCKET}")
+  |> range(start: ${QUERY_RANGE_START})
+EOF
+)
   status="$?"
   http_code=$(echo "$response" | tail -n1)
   body=$(echo "$response" | sed '$d')
