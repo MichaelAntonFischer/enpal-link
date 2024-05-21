@@ -81,6 +81,7 @@ def fetch_solar_power_surplus():
             # Calculate the effective solar power surplus
             if battery_charge_level > 50:
                 effective_surplus = grid_export + min(battery_charge_discharge, -2000)
+                effective_surplus = max(effective_surplus, grid_export + 2000)
             else:
                 effective_surplus = grid_export
 
