@@ -6,6 +6,11 @@ QUERY_RANGE_START="-5m"
 # Function to output the whole bucket
 output_whole_bucket() {
   echo "$(date '+%Y-%m-%d %H:%M:%S') - Starting data query..." >> /var/log/enpal.log
+  echo "INFLUX_API: ${INFLUX_API}"  # Debug statement
+  echo "INFLUX_TOKEN: ${INFLUX_TOKEN}"  # Debug statement
+  echo "INFLUX_BUCKET: ${INFLUX_BUCKET}"  # Debug statement
+  echo "QUERY_RANGE_START: ${QUERY_RANGE_START}"  # Debug statement
+
   var=$(curl -f -s "${INFLUX_API}" \
     --header "Authorization: Token ${INFLUX_TOKEN}" \
     --header "Accept: application/json" \
