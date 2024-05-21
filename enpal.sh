@@ -16,10 +16,12 @@ output_whole_bucket() {
   response=$(curl -i -s -w "%{http_code}" "${INFLUX_API}" \
     --header "Authorization: Token ${INFLUX_TOKEN}" \
     --header "Accept: application/json" \
-    --header "Content-type: application/vnd.flux" \
+    --header "Content-type: application/json" \
     --data-binary @- <<EOF
-from(bucket: "${INFLUX_BUCKET}")
-  |> range(start: ${QUERY_RANGE_START})
+{
+  "type": "flux",
+  "query": "from(bucket: \\"${INFLUX_BUCKET}\\") |> range(start: ${QUERY_RANGE_START})"
+}
 EOF
 )
   status="$?"
