@@ -73,7 +73,7 @@ def fetch_solar_power_surplus():
     query = f"""
     {{
       "type": "flux",
-      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> last()",
+      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"PowerToGrid\\") |> last()",
       "orgID": "{INFLUX_ORG_ID}"
     }}
     """
