@@ -2,7 +2,6 @@ import os
 import requests
 import pandas as pd
 from io import StringIO
-import time
 import logging
 from flask import Flask, jsonify
 from dotenv import load_dotenv
@@ -47,7 +46,7 @@ def fetch_solar_power_surplus():
     query = f"""
     {{
       "type": "flux",
-      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Grid.Export\\") |> last()",
+      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Grid.Export\\" or r._field == \\"Power.Battery.Charge.Discharge\\" or r._field == \\"Energy.Battery.Charge.Level\\") |> last()",
       "orgID": "{INFLUX_ORG_ID}"
     }}
     """
@@ -69,13 +68,26 @@ def fetch_solar_power_surplus():
         df = pd.read_csv(data)
         logging.debug(f"DataFrame: {df}")
 
-        # Extract the latest value (assuming it's the solar power surplus)
-        if not df.empty and '_value' in df.columns:
-            latest_value = df['_value'].iloc[-1]
-            logging.debug(f"Latest solar power surplus: {latest_value}")
-            return float(latest_value)  # Convert to standard Python float
+        # Extract the latest values
+        if not df.empty:
+            grid_export = df[df['_field'] == 'Power.Grid.Export']['_value'].iloc[-1]
+            battery_charge_discharge = df[df['_field'] == 'Power.Battery.Charge.Discharge']['_value'].iloc[-1]
+            battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
+
+            logging.debug(f"Grid Export: {grid_export}")
+            logging.debug(f"Battery Charge/Discharge: {battery_charge_discharge}")
+            logging.debug(f"Battery Charge Level: {battery_charge_level}")
+
+            # Calculate the effective solar power surplus
+            if battery_charge_level > 50:
+                effective_surplus = grid_export + min(battery_charge_discharge, -2000)
+            else:
+                effective_surplus = grid_export
+
+            logging.debug(f"Effective Solar Power Surplus: {effective_surplus}")
+            return float(effective_surplus)  # Convert to standard Python float
         else:
-            logging.error("DataFrame is empty or '_value' column is missing.")
+            logging.error("DataFrame is empty or required columns are missing.")
             return None
     else:
         logging.error(f"Data query failed with status {response.status_code}.")
