@@ -4,9 +4,9 @@ import pandas as pd
 from io import StringIO
 import time
 import logging
-from pymodbus.server.sync import StartTcpServer
+from pymodbus.server.sync import StartTcpServer, ModbusSlaveContext, ModbusServerContext
 from pymodbus.device import ModbusDeviceIdentification
-from pymodbus.datastore import ModbusSequentialDataBlock, ModbusSlaveContext, ModbusServerContext
+from pymodbus.datastore import ModbusSequentialDataBlock
 import sunspec2.mdef as mdef
 import sunspec2.device as device
 
