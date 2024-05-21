@@ -11,21 +11,27 @@ output_whole_bucket() {
   echo "INFLUX_BUCKET: ${INFLUX_BUCKET}"  # Debug statement
   echo "QUERY_RANGE_START: ${QUERY_RANGE_START}"  # Debug statement
 
-  var=$(curl -f -s "${INFLUX_API}" \
+  # Perform the curl request and capture the HTTP response headers
+  response=$(curl -i -s -w "%{http_code}" "${INFLUX_API}" \
     --header "Authorization: Token ${INFLUX_TOKEN}" \
     --header "Accept: application/json" \
     --header "Content-type: application/vnd.flux" \
     --data "from(bucket: \"$INFLUX_BUCKET\")
             |> range(start: $QUERY_RANGE_START)")
   status="$?"
+  http_code=$(echo "$response" | tail -n1)
+  body=$(echo "$response" | sed '$d')
+
   echo "Curl status: $status"  # Debug statement
-  echo "Curl output: $var"  # Debug statement
-  if [ "$status" -eq 0 ]; then
+  echo "HTTP code: $http_code"  # Debug statement
+  echo "Curl output: $body"  # Debug statement
+
+  if [ "$status" -eq 0 ] && [ "$http_code" -eq 200 ]; then
     echo "$(date '+%Y-%m-%d %H:%M:%S') - Data query successful." >> /var/log/enpal.log
   else
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - Data query failed with status $status." >> /var/log/enpal.log
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - Data query failed with status $status and HTTP code $http_code." >> /var/log/enpal.log
   fi
-  echo "$var"
+  echo "$body"
   return "$status"
 }
 
