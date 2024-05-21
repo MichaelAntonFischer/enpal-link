@@ -14,5 +14,4 @@ RUN chmod +x /usr/local/bin/enpal.sh
 EXPOSE 502
 
 # Set the entrypoint to the script and redirect output to a log file
-ENTRYPOINT ["/usr/local/bin/enpal.sh"]
-CMD ["whole_bucket"]
+ENTRYPOINT ["/usr/local/bin/enpal.sh whole_bucket"]
