@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  enpal:
+    build: .
+    ports:
+      - "502:502"
+    environment:
+      - INFLUX_HOST=${INFLUX_HOST}
+      - INFLUX_ORG_ID=${INFLUX_ORG_ID}
+      - INFLUX_BUCKET=${INFLUX_BUCKET}
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - POWERFOX_USERNAME=${POWERFOX_USERNAME}
+      - POWERFOX_PASSWORD=${POWERFOX_PASSWORD}
+      - POWERFOX_DEVICE_ID=${POWERFOX_DEVICE_ID}
