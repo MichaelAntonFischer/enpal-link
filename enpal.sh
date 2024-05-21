@@ -22,6 +22,9 @@ output_whole_bucket() {
   return "$status"
 }
 
+# Debug: Print a message indicating the script has started
+echo "Script started"
+
 # Run the script continuously
 while true; do
   output_whole_bucket
