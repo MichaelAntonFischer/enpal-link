@@ -1,6 +1,6 @@
 #!/bin/sh
 # Zugangsdaten InfluxDB
-INFLUX_API="${INFLUX_HOST}/api/v2/query?orgID=${INFLUX_ORG_ID}"
+INFLUX_API="http://${INFLUX_HOST}:8086/api/v2/query?orgID=${INFLUX_ORG_ID}"
 QUERY_RANGE_START="-5m"
 
 # Function to output the whole bucket
@@ -17,11 +17,10 @@ output_whole_bucket() {
     --header "Accept: application/json" \
     --header "Content-type: application/vnd.flux" \
     --data-binary @- <<EOF
-from(bucket: "${INFLUX_BUCKET}")
-  |> range(start: ${QUERY_RANGE_START})
-  |> filter(fn: (r) => r._measurement == "numberDataPoints")
-  |> filter(fn: (r) => r._field == "Power.Production.Total" or r._field == "Energy.Production.Total.Day" or r._field == "Power.External.Total" or r._field == "Energy.External.Total.Out.Day" or r._field == "Energy.External.Total.In.Day" or r._field == "Energy.Consumption.Total.Day" or r._field == "Power.Consumption.Total" or r._field == "Power.Storage.Total" or r._field == "Energy.Storage.Total.In.Day" or r._field == "Energy.Storage.Total.Out.Day" or r._field == "Energy.Storage.Level" or r._field == "Percent.Storage.Level")
-  |> keep(columns: ["_time", "_value", "_field"])
+{
+  "type": "flux",
+  "query": "from(bucket: \\"${INFLUX_BUCKET}\\") |> range(start: ${QUERY_RANGE_START})"
+}
 EOF
 )
   status="$?"
