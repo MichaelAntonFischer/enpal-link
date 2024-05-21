@@ -1,6 +1,6 @@
 #!/bin/sh
 # Zugangsdaten InfluxDB
-INFLUX_API="http://${INFLUX_HOST}:8086/api/v2/query"
+INFLUX_API="http://${INFLUX_HOST}:8086/api/v2/query?orgID=${INFLUX_ORG_ID}"
 QUERY_RANGE_START="-5m"
 
 # Function to output the whole bucket
@@ -16,13 +16,10 @@ output_whole_bucket() {
   response=$(curl -i -s -w "%{http_code}" "${INFLUX_API}" \
     --header "Authorization: Token ${INFLUX_TOKEN}" \
     --header "Accept: application/json" \
-    --header "Content-type: application/json" \
+    --header "Content-type: application/vnd.flux" \
     --data-binary @- <<EOF
-{
-  "type": "flux",
-  "query": "from(bucket: \\"${INFLUX_BUCKET}\\") |> range(start: ${QUERY_RANGE_START})",
-  "org": "${INFLUX_ORG_ID}"
-}
+from(bucket: "${INFLUX_BUCKET}")
+  |> range(start: ${QUERY_RANGE_START})
 EOF
 )
   status="$?"
