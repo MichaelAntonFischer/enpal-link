@@ -19,6 +19,9 @@ output_whole_bucket() {
     --data-binary @- <<EOF
 from(bucket: "${INFLUX_BUCKET}")
   |> range(start: ${QUERY_RANGE_START})
+  |> filter(fn: (r) => r._measurement == "numberDataPoints")
+  |> filter(fn: (r) => r._field == "Power.Production.Total" or r._field == "Energy.Production.Total.Day" or r._field == "Power.External.Total" or r._field == "Energy.External.Total.Out.Day" or r._field == "Energy.External.Total.In.Day" or r._field == "Energy.Consumption.Total.Day" or r._field == "Power.Consumption.Total" or r._field == "Power.Storage.Total" or r._field == "Energy.Storage.Total.In.Day" or r._field == "Energy.Storage.Total.Out.Day" or r._field == "Energy.Storage.Level" or r._field == "Percent.Storage.Level")
+  |> keep(columns: ["_time", "_value", "_field"])
 EOF
 )
   status="$?"
