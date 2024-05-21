@@ -1,5 +1,4 @@
 #!/bin/sh
-
 # Zugangsdaten InfluxDB
 # @ see https://github.com/weldan84/enpal-influx-evcc
 INFLUX_HOST="YOUR_INFLUX_HOST"
@@ -16,6 +15,19 @@ POWERFOX_PASSWORD="POWERFOX_PASSWORD"
 POWERFOX_DEVICE_ID="POWERFOX_DEVICE_ID"
 
 case $1 in
+# Output the whole bucket
+whole_bucket)
+  var=$(curl -f -s "${INFLUX_API}" \
+    --header "Authorization: Token ${INFLUX_TOKEN}" \
+    --header "Accept: application/json" \
+    --header "Content-type: application/vnd.flux" \
+    --data "from(bucket: \"$INFLUX_BUCKET\")
+            |> range(start: $QUERY_RANGE_START)")
+  status="$?"
+  echo "$var"
+  exit "$status"
+  ;;
+# Other cases remain unchanged
 # Gesamtverbrauch
 consumption)
   var=$(curl -f -s "${INFLUX_API}" \
@@ -78,150 +90,33 @@ energy)
     --header "Content-type: application/vnd.flux" \
     --data "from(bucket: \"$INFLUX_BUCKET\")
             |> range(start: $QUERY_RANGE_START)
-            |> filter(fn: (r) => r._measurement == \"aggregated\")
-            |> filter(fn: (r) => r._field == \"Produktion\")
+            |> filter(fn: (r) => r._measurement == \"EnergieDc\")
+            |> filter(fn: (r) => r._field == \"Total\")
             |> keep(columns: [\"_value\"])
             |> last()")
   status="$?"
   var="${var##*,}"
   ;;
-# Aktuelle Produktion der Phasen 1 bis 3
-phase)
-  if [ -z "$2" ]; then
-    echo >&2 "The phase number must be passed as an argument"
-    exit 1
-  else
-    case $2 in
-    1)
-      var=$(curl -f -s "${INFLUX_API}" \
-        --header "Authorization: Token ${INFLUX_TOKEN}" \
-        --header "Accept: application/json" \
-        --header "Content-type: application/vnd.flux" \
-        --data "from(bucket: \"$INFLUX_BUCKET\")
-               |> range(start: $QUERY_RANGE_START)
-               |> filter(fn: (r) => r._measurement == \"phasePowerAc\")
-               |> filter(fn: (r) => r._field == \"Phase1\")
-               |> keep(columns: [\"_value\"])
-               |> last()")
-      ;;
-    2)
-      var=$(curl -f -s "${INFLUX_API}" \
-        --header "Authorization: Token ${INFLUX_TOKEN}" \
-        --header "Accept: application/json" \
-        --header "Content-type: application/vnd.flux" \
-        --data "from(bucket: \"$INFLUX_BUCKET\")
-               |> range(start: $QUERY_RANGE_START)
-               |> filter(fn: (r) => r._measurement == \"phasePowerAc\")
-               |> filter(fn: (r) => r._field == \"Phase2\")
-               |> keep(columns: [\"_value\"])
-               |> last()")
-      ;;
-    3)
-      var=$(curl -f -s "${INFLUX_API}" \
-        --header "Authorization: Token ${INFLUX_TOKEN}" \
-        --header "Accept: application/json" \
-        --header "Content-type: application/vnd.flux" \
-        --data "from(bucket: \"$INFLUX_BUCKET\")
-               |> range(start: $QUERY_RANGE_START)
-               |> filter(fn: (r) => r._measurement == \"phasePowerAc\")
-               |> filter(fn: (r) => r._field == \"Phase3\")
-               |> keep(columns: [\"_value\"])
-               |> last()")
-      ;;
-    *)
-      echo >&2 "The phase number is invalid"
-      exit 1
-      ;;
-    esac
-    status="$?"
-    var="${var##*,}"
-  fi
-  ;;
-# Wechselstromleistung
-ac)
+# Aktueller Ladezustand der Batterie
+battery)
   var=$(curl -f -s "${INFLUX_API}" \
     --header "Authorization: Token ${INFLUX_TOKEN}" \
     --header "Accept: application/json" \
     --header "Content-type: application/vnd.flux" \
     --data "from(bucket: \"$INFLUX_BUCKET\")
-           |> range(start: $QUERY_RANGE_START)
-           |> filter(fn: (r) => r._measurement == \"phasePowerAc\")
-           |> filter(fn: (r) => r._field == \"Total\")
-           |> keep(columns: [\"_value\"])
-           |> last()")
+            |> range(start: $QUERY_RANGE_START)
+            |> filter(fn: (r) => r._measurement == \"Batterie\")
+            |> filter(fn: (r) => r._field == \"Ladezustand\")
+            |> keep(columns: [\"_value\"])
+            |> last()")
   status="$?"
   var="${var##*,}"
   ;;
-# Batterieleistung
-# Die maximale Entladeleistung ist auf 5000W begrenzt, die maximale Ladeleistung auf -5000W. Dieser Wert kann/muss je nach Speicher angepasst werden.
-battery)
-  pv=$(enpal pv)
-  ac=$(enpal ac)
-  if [ "$POWERFOX_USERNAME" = "POWERFOX_USERNAME" ] || [ "$POWERFOX_PASSWORD" = "POWERFOX_PASSWORD" ]; then
-    # Falls Powerfox Poweropti nicht genutzt wird, muss der Ladezustand geschätzt werden
-    if [ "$ac" -lt "$pv" ]; then
-      echo 0
-      exit 0
-    else
-      battery=$(($ac - $pv))
-      if [ "$battery" -lt -5000 ]; then
-        echo -5000
-        exit 0
-      elif [ "$battery" -gt 5000 ]; then
-        echo 5000
-        exit 0
-      fi
-    fi
-  else
-    # Falls Powerfox Poweropti vorhanden ist, kann mit Sicherheit bestimmt werden wie hoch die
-    # Batterieleistung ist, indem die Werte für den tatsächlichen Netzbezug mit einberechnet werden.
-    grid=$(enpal grid_powerfox)
-    if [ "$grid" -gt 0 ] && [ "$ac" -lt "$pv" ]; then
-      echo 0
-    else
-      battery=$(($ac - $pv + $grid))
-    fi
-  fi
-
-  echo "$battery"
-  exit 0
-  ;;
-# Ladezustand der Batterie (bisher nur 0%, 50% oder 100% möglich)
-# Momentan werden durch Enpal in der InfluxDB noch nicht die nötigen Daten bereitgestellt um den genauen Ladezustand bestimmen zu können.
-# Ist die Batterieleistung gleich 0 und die DC-Erzeugungsleistung größer als 0 kann davon ausgegangen werden, dass die Batterie zu 100% geladen ist. Beträgt
-# die Batterieleistung jedoch 0 und die DC-Erzeugungsleistung ebenso 0, ist die Batterie vollständig entladen. Alles dazwischen erhält aktuell den Wert 50%.
-soc)
-  pv=$(enpal pv)
-  battery=$(enpal battery)
-  if [ "$battery" -eq 0 ] && [ "$pv" -gt 0 ]; then
-    echo 100
-  elif [ "$battery" -eq 0 ]; then
-    echo 0
-  else
-    echo 50
-  fi
-  exit 0
-  ;;
-# Kleine Gedankenstütze für die Konsole ;)
-help)
-  echo consumption
-  echo grid_enpal
-  echo grid_powerfox
-  echo pv
-  echo energy
-  echo phase \[1-3\]
-  echo ac
-  echo battery
-  echo soc
-  exit 0
-  ;;
 *)
-  echo >&2 "The argument for the desired meter value is missing or invalid"
+  echo "Usage: $0 {whole_bucket|consumption|grid_enpal|grid_powerfox|pv|energy|battery}"
   exit 1
   ;;
 esac
 
-# Konvertierung
-var="${var%.*}"
-echo $((var))
+echo "$var"
 exit "$status"
