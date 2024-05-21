@@ -13,16 +13,11 @@ output_whole_bucket() {
   echo "QUERY_RANGE_START: ${QUERY_RANGE_START}"  # Debug statement
 
   # Perform the curl request and capture the HTTP response headers
-  response=$(curl -i -s -w "%{http_code}" "${INFLUX_API}" \
+    response=$(curl -i -s -w "%{http_code}" "${INFLUX_API}" \
     --header "Authorization: Token ${INFLUX_TOKEN}" \
-    --header "Accept: application/json" \
-    --header "Content-type: application/json" \
-    --data-binary @- <<EOF
-{
-  "type": "flux",
-  "query": "from(bucket: \\"${INFLUX_BUCKET}\\") |> range(start: ${QUERY_RANGE_START}) |> filter(fn: (r) => r._measurement == \\"numberDataPoints\\") |> filter(fn: (r) => r._field == \\"Power.Production.Total\\") |> keep(columns: [\\"_time\\", \\"_value\\", \\"_field\\"]) |> last()"
-}
-EOF
+    --header "Accept: application/csv" \
+    --header "Content-type: application/vnd.flux" \
+    --data-raw 'from(bucket: "'"${INFLUX_BUCKET}"'") |> range(start: '"${QUERY_RANGE_START}"') |> filter(fn: (r) => r._measurement == "numberDataPoints") |> filter(fn: (r) => r._field == "Power.Production.Total") |> keep(columns: ["_time", "_value", "_field"]) |> last()' \
 )
   status="$?"
   http_code=$(echo "$response" | tail -n1)
