@@ -7,7 +7,7 @@ import logging
 from pymodbus.server import StartTcpServer
 from pymodbus.datastore import ModbusSequentialDataBlock, ModbusSlaveContext, ModbusServerContext
 from pymodbus.device import ModbusDeviceIdentification
-import sunspec2.mdef as mdef
+import sunspec2.modbus.client as client
 import sunspec2.device as device
 
 # Configure logging
@@ -36,8 +36,7 @@ logging.info(f"MODBUS_PORT: {MODBUS_PORT}")
 
 # SunSpec model for a power meter (model 1)
 model_id = 1
-model_def = mdef.get_model_def(model_id)
-model = device.Model(model_def)
+model = device.Model(model_id)
 
 # Initialize the model with some example values
 model.points['ID'].value = model_id
