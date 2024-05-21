@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-# Configure logging
+# Configure logging to log to stdout and stderr
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(message)s')
 
 # Read environment variables
@@ -71,7 +71,7 @@ def fetch_solar_power_surplus():
         # Extract the latest value (assuming it's the solar power surplus)
         latest_value = df['_value'].iloc[-1]
         logging.debug(f"Latest solar power surplus: {latest_value}")
-        return latest_value
+        return int(latest_value)  # Convert to standard Python integer
     else:
         logging.error(f"Data query failed with status {response.status_code}.")
         return None
