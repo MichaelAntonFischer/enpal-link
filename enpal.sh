@@ -1,6 +1,6 @@
 #!/bin/sh
 # Zugangsdaten InfluxDB
-INFLUX_API="http://${INFLUX_HOST}:8086/api/v2/query?orgID=${INFLUX_ORG_ID}"
+INFLUX_API="http://${INFLUX_HOST}:8086/api/v2/query?org=${INFLUX_ORG_ID}"
 QUERY_RANGE_START="-5m"
 
 # Function to output the whole bucket
@@ -9,6 +9,7 @@ output_whole_bucket() {
   echo "INFLUX_API: ${INFLUX_API}"  # Debug statement
   echo "INFLUX_TOKEN: ${INFLUX_TOKEN}"  # Debug statement
   echo "INFLUX_BUCKET: ${INFLUX_BUCKET}"  # Debug statement
+  echo "INFLUX_ORG_ID: ${INFLUX_ORG_ID}"  # Debug statement
   echo "QUERY_RANGE_START: ${QUERY_RANGE_START}"  # Debug statement
 
   # Perform the curl request and capture the HTTP response headers
