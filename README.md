@@ -14,7 +14,7 @@ Git
 Clone this repository to your local machine:
 
 ```bash
-git clone https://github.com/michaelantonfischer/enpal-solar-surplus.git
+git clone https://github.com/michaelantonfischer/enpal-solar-surplus
 ```
 
 ### Step 2: Copy and Configure the Start Script
