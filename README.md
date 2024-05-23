@@ -3,10 +3,10 @@
 This repository contains a Python script that fetches solar power surplus data from an Enpal InfluxDB and serves it via an HTTP endpoint. This data can be used to integrate with the cFos Charging Manager to enable surplus charging.
 
 ## Prerequisites
-Raspberry Pi (or any other Linux-based system) with:
-Docker
-Docker-Compose
-Git
+Raspberry Pi (or any other Linux-based system) with:<br />
+Docker<br />
+Docker-Compose<br />
+Git<br />
 
 ## Installation
 
@@ -39,14 +39,14 @@ nano ./start_enpal.sh
 
 #### Add the following environment variables to the script:
 
-INFLUX_HOST="YOUR_INFLUX_HOST" (You can get this info from Enpal customer service)
-INFLUX_ORG_ID="YOUR_INFLUX_ORG_ID" (You can get this info from Enpal customer service)
-INFLUX_BUCKET="YOUR_INFLUX_BUCKET" (Default: solar)
-INFLUX_TOKEN="YOUR_INFLUX_TOKEN" (You can get this info from Enpal customer service)
-HTTP_HOST="0.0.0.0" (You can leave as is, if running in docker)
-HTTP_PORT="5000" (You can leave as is, if running in docker)
-BATTERY_STATE_OF_CHARGE_THRESHOLD="50" (This sets the battery percentage over which battery should supplement the solar surplus)
-BATTERY_WATT_ADDER="2000" (This sets the battery wattage with which battery should supplement the solar surplus)
+INFLUX_HOST="YOUR_INFLUX_HOST" (You can get this info from Enpal customer service)<br />
+INFLUX_ORG_ID="YOUR_INFLUX_ORG_ID" (You can get this info from Enpal customer service)<br />
+INFLUX_BUCKET="YOUR_INFLUX_BUCKET" (Default: solar)<br />
+INFLUX_TOKEN="YOUR_INFLUX_TOKEN" (You can get this info from Enpal customer service)<br />
+HTTP_HOST="0.0.0.0" (You can leave as is, if running in docker)<br />
+HTTP_PORT="5000" (You can leave as is, if running in docker)<br />
+BATTERY_STATE_OF_CHARGE_THRESHOLD="50" (This sets the battery percentage over which battery should supplement the solar surplus)<br />
+BATTERY_WATT_ADDER="2000" (This sets the battery wattage with which battery should supplement the solar surplus)<br />
 
 ### Step 3: Build and Run the Docker Container (Optional)
 Navigate to the cloned repository directory and build the Docker container:
