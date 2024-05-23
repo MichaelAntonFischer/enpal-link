@@ -104,6 +104,7 @@ docker logs -f enpal-link
 ```
 Ensure the server running the Flask application is accessible from the device running the cFos Charging Manager.
 Ensure the JSON response from the Flask endpoint matches the expected format.
+If the script says "Organisation not found" or something like this, Enpal might have given you the ClientID instead of OrgID. You can find the correct ID in the InfluxDB.
 
 ## License
 
