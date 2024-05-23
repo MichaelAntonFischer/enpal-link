@@ -1,8 +1,8 @@
-Enpal Solar Surplus Integration with cFos Charging Manager
+# Enpal Solar Surplus Integration with cFos Charging Manager
 
 This repository contains a Python script that fetches solar power surplus data from an Enpal InfluxDB and serves it via an HTTP endpoint. This data can be used to integrate with the cFos Charging Manager to enable surplus charging.
 
-Prerequisites
+## Prerequisites
 
 Python 3.11 or later
 Docker
@@ -10,33 +10,33 @@ Git
 Raspberry Pi (or any other Linux-based system)
 Installation
 
-Step 1: Clone the Repository
+### Step 1: Clone the Repository
 Clone this repository to your local machine:
 
 ```bash
 git clone https://github.com/yourusername/enpal-solar-surplus.git
 ```
 
-Step 2: Copy and Configure the Start Script
+### Step 2: Copy and Configure the Start Script
 Copy the start_enpal.sh script to a directory above the cloned repository:
 
 ```bash
 cp enpal-solar-surplus/start_enpal.sh ..
 ```
 
-Make the script executable:
+### Make the script executable:
 
 ```bash
 chmod +x ../start_enpal.sh
 ```
 
-Edit the start_enpal.sh script to add the necessary environment variables:
+### Edit the start_enpal.sh script to add the necessary environment variables:
 
 ```bash
 nano ../start_enpal.sh
 ```
 
-Add the following environment variables to the script:
+### Add the following environment variables to the script:
 
 INFLUXDB_URL
 INFLUXDB_TOKEN
@@ -53,7 +53,7 @@ docker run -d -p 5000:5000 --name enpal-solar enpal-solar-surplus
 
 This will build and start the Docker container, running the Flask application that serves the solar power surplus data.
 
-Step 4: Configure cFos Charging Manager
+### Step 4: Configure cFos Charging Manager
 Access the cFos Charging Manager Configuration:
 
 Navigate to the cFos Charging Manager web interface.
@@ -76,7 +76,7 @@ Stop Current: 0A (or your desired stop current)
 Priority: High
 Testing the Endpoint
 
-You can test the endpoint using the curl command:
+### You can test the endpoint using the curl command:
 
 ```bash
 curl http://yourip:5000/solar_power_surplus
@@ -84,12 +84,13 @@ curl http://yourip:5000/solar_power_surplus
 
 The expected response should reflect the calculated solar power surplus considering the battery status.
 
-Troubleshooting
+## Troubleshooting
 
 Ensure the Flask application is running and check the logs for any errors.
 Ensure the server running the Flask application is accessible from the device running the cFos Charging Manager.
 Ensure the JSON response from the Flask endpoint matches the expected format.
-License
+
+## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
 
