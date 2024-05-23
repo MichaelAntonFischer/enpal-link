@@ -21,7 +21,7 @@ git clone https://github.com/MichaelAntonFischer/enpal-link
 Copy the start_enpal.sh script to a directory above the cloned repository:
 
 ```bash
-cp enpal-solar-surplus/start_enpal.sh ..
+cp enpal-link/start_enpal.sh .
 ```
 This step is recommended to not overwrite your config when pulling new updates from the git repo and not expose your data to the git directory.
 
@@ -52,9 +52,9 @@ BATTERY_WATT_ADDER="2000" (This sets the battery wattage with which battery shou
 Navigate to the cloned repository directory and build the Docker container:
 
 ```bash
-cd enpal-solar-surplus
-docker build -t enpal-solar-surplus .
-docker run -d -p 5000:5000 --name enpal-solar enpal-solar-surplus
+cd enpal-link
+docker build -t enpal-link .
+docker run -d -p 5000:5000 --name enpal-link enpal-link
 ```
 
 This will build and start the Docker container, running the Flask application that serves the solar power surplus data.
