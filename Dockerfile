@@ -21,6 +21,8 @@ ENV INFLUX_ORG_ID=""
 ENV QUERY_RANGE_START="-5m"
 ENV HTTP_HOST="0.0.0.0"
 ENV HTTP_PORT="5000"
+ENV BATTERY_STATE_OF_CHARGE_THRESHOLD="50"
+ENV BATTERY_WATT_ADDER="2000"
 
 # Run app.py when the container launches
 CMD ["python", "./enpal.py"]

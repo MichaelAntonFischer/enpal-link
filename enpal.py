@@ -20,6 +20,8 @@ INFLUX_ORG_ID = os.getenv("INFLUX_ORG_ID")
 QUERY_RANGE_START = os.getenv("QUERY_RANGE_START", "-5m")  # Default to -5m if not set
 HTTP_HOST = os.getenv("HTTP_HOST", "0.0.0.0")
 HTTP_PORT = int(os.getenv("HTTP_PORT", 5000))
+BATTERY_STATE_OF_CHARGE_THRESHOLD = int(os.getenv("BATTERY_STATE_OF_CHARGE_THRESHOLD", 50))  # Default to 50 if not set
+BATTERY_WATT_ADDER = int(os.getenv("BATTERY_WATT_ADDER", 2000))  # Default to 2000 if not set
 
 # Construct the INFLUX_API URL
 INFLUX_API = f"http://{INFLUX_HOST}:8086/api/v2/query?orgID={INFLUX_ORG_ID}"
@@ -32,6 +34,8 @@ logging.debug(f"INFLUX_ORG_ID: {INFLUX_ORG_ID}")
 logging.debug(f"QUERY_RANGE_START: {QUERY_RANGE_START}")
 logging.debug(f"HTTP_HOST: {HTTP_HOST}")
 logging.debug(f"HTTP_PORT: {HTTP_PORT}")
+logging.debug(f"BATTERY_STATE_OF_CHARGE_THRESHOLD: {BATTERY_STATE_OF_CHARGE_THRESHOLD}")
+logging.debug(f"BATTERY_WATT_ADDER: {BATTERY_WATT_ADDER}")
 
 app = Flask(__name__)
 
@@ -79,9 +83,9 @@ def fetch_solar_power_surplus():
             logging.debug(f"Battery Charge Level: {battery_charge_level}")
 
             # Calculate the effective solar power surplus
-            if battery_charge_level > 50:
-                effective_surplus = grid_export + min(battery_charge_discharge, -2000)
-                effective_surplus = max(effective_surplus, grid_export + 2000)
+            if battery_charge_level > BATTERY_STATE_OF_CHARGE_THRESHOLD:
+                effective_surplus = grid_export + min(battery_charge_discharge, -BATTERY_WATT_ADDER)
+                effective_surplus = max(effective_surplus, grid_export + BATTERY_WATT_ADDER)
             else:
                 effective_surplus = grid_export
 
