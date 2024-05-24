@@ -1,4 +1,4 @@
-# Enpal Solar Surplus Integration with cFos Charging Manager
+# Enpal Solar Integration with cFos Charging Manager
 
 This repository contains a Python script that fetches solar power surplus data from an Enpal InfluxDB and serves it via an HTTP endpoint. This data can be used to integrate with the cFos Charging Manager to enable surplus charging.
 
@@ -45,8 +45,6 @@ INFLUX_BUCKET="YOUR_INFLUX_BUCKET" (Default: solar)<br />
 INFLUX_TOKEN="YOUR_INFLUX_TOKEN" (You can get this info from Enpal customer service)<br />
 HTTP_HOST="0.0.0.0" (You can leave as is, if running in docker)<br />
 HTTP_PORT="5000" (You can leave as is, if running in docker)<br />
-BATTERY_STATE_OF_CHARGE_THRESHOLD="50" (This sets the battery percentage over which battery should supplement the solar surplus)<br />
-BATTERY_WATT_ADDER="2000" (This sets the battery wattage with which battery should supplement the solar surplus)<br />
 
 ### Step 3: Build and Run the Docker Container (Optional)
 Navigate to the cloned repository directory and build the Docker container:
@@ -79,14 +77,16 @@ Upload the Enpal_Surplus_Meter.json file from this repo.
 
 Go to the "Charging Rules" section in the cFos Charging Manager.
 Add a new rule and select "Surplus Charging" as the mode.
-Configure the rule to use the "Enpal Solar Surplus Meter" you just created.
+Configure the rule to use the "Enpal Solar Generation Meter" you just created.
 Example Configuration for Surplus Charging Rule:
 
-Meter: Enpal Solar Surplus Meter
+Meter: Enpal Solar Meter
 Start Current: 6A (or your desired start current)
 Stop Current: 0A (or your desired stop current)
 Priority: High
 Testing the Endpoint
+
+If you want you can also add the other meters for a more intricate pv and battery control.
 
 ### You can test the endpoint using the curl command:
 
