@@ -50,7 +50,7 @@ def fetch_solar_power_surplus():
     query = f"""
     {{
       "type": "flux",
-      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Grid.Export\\" or r._field == \\"Power.Battery.Charge.Discharge\\" or r._field == \\"Energy.Battery.Charge.Level\\") |> last()",
+      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Grid.Export\\" or r._field == \\"Power.Battery.Charge.Discharge\\" or r._field == \\"Energy.Battery.Charge.Level\\" or r._field == \\"Power.Consumption.Total\\" or r._field == \\"Power.Production.Total\\") |> last()",
       "orgID": "{INFLUX_ORG_ID}"
     }}
     """
@@ -67,22 +67,23 @@ def fetch_solar_power_surplus():
 
     if response.status_code == 200:
         logging.debug("Data query successful.")
-        # Parse the CSV response
         data = StringIO(response.text)
         df = pd.read_csv(data)
         logging.debug(f"DataFrame: {df}")
 
-        # Extract the latest values
         if not df.empty:
             grid_export = df[df['_field'] == 'Power.Grid.Export']['_value'].iloc[-1]
             battery_charge_discharge = df[df['_field'] == 'Power.Battery.Charge.Discharge']['_value'].iloc[-1]
             battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
+            house_usage = df[df['_field'] == 'Power.Consumption.Total']['_value'].iloc[-1]
+            solar_generation = df[df['_field'] == 'Power.Production.Total']['_value'].iloc[-1]
 
             logging.debug(f"Grid Export: {grid_export}")
             logging.debug(f"Battery Charge/Discharge: {battery_charge_discharge}")
             logging.debug(f"Battery Charge Level: {battery_charge_level}")
+            logging.debug(f"House Usage: {house_usage}")
+            logging.debug(f"Solar Generation: {solar_generation}")
 
-            # Calculate the effective solar power surplus
             if battery_charge_level > BATTERY_STATE_OF_CHARGE_THRESHOLD:
                 effective_surplus = grid_export + min(battery_charge_discharge, -BATTERY_WATT_ADDER)
                 effective_surplus = max(effective_surplus, grid_export + BATTERY_WATT_ADDER)
@@ -90,7 +91,13 @@ def fetch_solar_power_surplus():
                 effective_surplus = grid_export
 
             logging.debug(f"Effective Solar Power Surplus: {effective_surplus}")
-            return float(effective_surplus)  # Convert to standard Python float
+
+            return {
+                "solar_power_surplus": float(effective_surplus),
+                "house_usage": float(house_usage),
+                "solar_power_generation": float(solar_generation),
+                "grid_power_draw": float(grid_export)
+            }
         else:
             logging.error("DataFrame is empty or required columns are missing.")
             return None
@@ -100,9 +107,9 @@ def fetch_solar_power_surplus():
 
 @app.route('/solar_power_surplus', methods=['GET'])
 def get_solar_power_surplus():
-    latest_value = fetch_solar_power_surplus()
-    if latest_value is not None:
-        return jsonify({"solar_power_surplus": latest_value})
+    data = fetch_solar_power_surplus()
+    if data is not None:
+        return jsonify(data)
     else:
         return jsonify({"error": "Failed to fetch data"}), 500
 
