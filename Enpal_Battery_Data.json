@@ -25,13 +25,13 @@
       "type": "string",
       "fixed": "0"
     },
-    "battery_charge_discharge_w": {
+    "power_w": {
         "address": "GET /battery_data",
         "query": "battery_charge_discharge",
         "type": "float",
         "resolution": 1.0
     },
-    "battery_charge_level_percent": {
+    "soc": {
         "address": "GET /battery_data",
         "query": "battery_charge_level",
         "type": "float",
