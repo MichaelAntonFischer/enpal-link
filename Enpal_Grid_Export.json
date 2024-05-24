@@ -1,14 +1,14 @@
 {
     "rtype": 1,  
-    "name": "Enpal Grid Export vMeter", 
+    "name": "Enpal Grid Export Meter", 
     "manufacturer": "Enpal",
-    "dev_type": "solar_surplus", 
+    "dev_type": "grid_export", 
     "delay_accumulated": false,  
   
     "type_designation": {
       "address": "",
       "type": "string",
-      "fixed": "Solar Surplus Meter"
+      "fixed": "Grid Export Meter"
     },
     "version": {
       "address": "",
@@ -31,5 +31,4 @@
         "type": "float",
         "resolution": 1.0
     }
-  }
-  
+}
