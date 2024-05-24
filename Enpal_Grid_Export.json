@@ -25,7 +25,7 @@
       "type": "string",
       "fixed": "0"
     },
-    "grid_power_draw_w": {
+    "power_w": {
         "address": "GET /grid_export",
         "query": "grid_power_draw",
         "type": "float",
