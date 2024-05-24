@@ -80,11 +80,11 @@ def fetch_solar_generation():
         return None
 
 def fetch_grid_export():
-    logging.debug("Fetching grid export data...")
+    logging.debug("Fetching grid import/export data...")
     query = f"""
     {{
       "type": "flux",
-      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Grid.Export\\" or r._field == \\"Energy.Battery.Charge.Level\\" or r._field == \\"Power.Battery.Charge.Discharge\\") |> last()",
+      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Grid.Export\\" or r._field == \\"Power.Grid.Import\\" or r._field == \\"Energy.Battery.Charge.Level\\" or r._field == \\"Power.Battery.Charge.Discharge\\") |> last()",
       "orgID": "{INFLUX_ORG_ID}"
     }}
     """
@@ -104,14 +104,20 @@ def fetch_grid_export():
         df = pd.read_csv(data)
         if not df.empty:
             grid_export = df[df['_field'] == 'Power.Grid.Export']['_value'].iloc[-1]
+            grid_import = df[df['_field'] == 'Power.Grid.Import']['_value'].iloc[-1]
             battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
             battery_charge_discharge = df[df['_field'] == 'Power.Battery.Charge.Discharge']['_value'].iloc[-1]
 
             if battery_charge_level > BATTERY_STATE_OF_CHARGE_THRESHOLD:
                 grid_export += min(battery_charge_discharge, -BATTERY_WATT_ADDER)
                 grid_export = max(grid_export, grid_export + BATTERY_WATT_ADDER)
+                grid_import += min(battery_charge_discharge, -BATTERY_WATT_ADDER)
+                grid_import = max(grid_import, grid_import + BATTERY_WATT_ADDER)
 
-            return {"grid_power_draw": float(grid_export)}
+            return {
+                "grid_power_export": float(grid_export),
+                "grid_power_import": float(grid_import)
+            }
         else:
             logging.error("DataFrame is empty or required columns are missing.")
             return None
@@ -137,5 +143,4 @@ def get_grid_export():
 
 if __name__ == "__main__":
     logging.debug("Script started")
-    app.run(host=HTTP_HOST, port=HTTP_PORT, debug=True)
     app.run(host=HTTP_HOST, port=HTTP_PORT, debug=True)
