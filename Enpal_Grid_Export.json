@@ -1,0 +1,35 @@
+{
+    "rtype": 1,  
+    "name": "Enpal Solar Generation vMeter", 
+    "manufacturer": "Enpal",
+    "dev_type": "solar_surplus", 
+    "delay_accumulated": false,  
+  
+    "type_designation": {
+      "address": "",
+      "type": "string",
+      "fixed": "Solar Surplus Meter"
+    },
+    "version": {
+      "address": "",
+      "type": "string",
+      "fixed": "1.0"
+    },
+    "firmware_version": {
+      "address": "",
+      "type": "string",
+      "fixed": "1.0"
+    },
+    "serial": {
+      "address": "",
+      "type": "string",
+      "fixed": "0"
+    },
+    "grid_power_draw_w": {
+        "address": "GET /grid_export",
+        "query": "grid_power_draw",
+        "type": "float",
+        "resolution": 1.0
+    }
+  }
+  

@@ -39,18 +39,12 @@ logging.debug(f"BATTERY_WATT_ADDER: {BATTERY_WATT_ADDER}")
 
 app = Flask(__name__)
 
-def fetch_solar_power_surplus():
-    logging.debug("Starting data query...")
-    logging.debug(f"INFLUX_API: {INFLUX_API}")
-    logging.debug(f"INFLUX_TOKEN: {INFLUX_TOKEN}")
-    logging.debug(f"INFLUX_BUCKET: {INFLUX_BUCKET}")
-    logging.debug(f"INFLUX_ORG_ID: {INFLUX_ORG_ID}")
-    logging.debug(f"QUERY_RANGE_START: {QUERY_RANGE_START}")
-
+def fetch_solar_generation():
+    logging.debug("Fetching solar generation data...")
     query = f"""
     {{
       "type": "flux",
-      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Grid.Export\\" or r._field == \\"Power.Battery.Charge.Discharge\\" or r._field == \\"Energy.Battery.Charge.Level\\" or r._field == \\"Power.Consumption.Total\\" or r._field == \\"Power.Production.Total\\") |> last()",
+      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Production.Total\\" or r._field == \\"Energy.Battery.Charge.Level\\" or r._field == \\"Power.Battery.Charge.Discharge\\") |> last()",
       "orgID": "{INFLUX_ORG_ID}"
     }}
     """
@@ -66,38 +60,18 @@ def fetch_solar_power_surplus():
     logging.debug(f"Curl output: {response.text}")
 
     if response.status_code == 200:
-        logging.debug("Data query successful.")
         data = StringIO(response.text)
         df = pd.read_csv(data)
-        logging.debug(f"DataFrame: {df}")
-
         if not df.empty:
-            grid_export = df[df['_field'] == 'Power.Grid.Export']['_value'].iloc[-1]
-            battery_charge_discharge = df[df['_field'] == 'Power.Battery.Charge.Discharge']['_value'].iloc[-1]
-            battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
-            house_usage = df[df['_field'] == 'Power.Consumption.Total']['_value'].iloc[-1]
             solar_generation = df[df['_field'] == 'Power.Production.Total']['_value'].iloc[-1]
-
-            logging.debug(f"Grid Export: {grid_export}")
-            logging.debug(f"Battery Charge/Discharge: {battery_charge_discharge}")
-            logging.debug(f"Battery Charge Level: {battery_charge_level}")
-            logging.debug(f"House Usage: {house_usage}")
-            logging.debug(f"Solar Generation: {solar_generation}")
+            battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
+            battery_charge_discharge = df[df['_field'] == 'Power.Battery.Charge.Discharge']['_value'].iloc[-1]
 
             if battery_charge_level > BATTERY_STATE_OF_CHARGE_THRESHOLD:
-                effective_surplus = grid_export + min(battery_charge_discharge, -BATTERY_WATT_ADDER)
-                effective_surplus = max(effective_surplus, grid_export + BATTERY_WATT_ADDER)
-            else:
-                effective_surplus = grid_export
+                solar_generation += min(battery_charge_discharge, -BATTERY_WATT_ADDER)
+                solar_generation = max(solar_generation, solar_generation + BATTERY_WATT_ADDER)
 
-            logging.debug(f"Effective Solar Power Surplus: {effective_surplus}")
-
-            return {
-                "solar_power_surplus": float(effective_surplus),
-                "house_usage": float(house_usage),
-                "solar_power_generation": float(solar_generation),
-                "grid_power_draw": float(grid_export)
-            }
+            return {"solar_power_generation": float(solar_generation)}
         else:
             logging.error("DataFrame is empty or required columns are missing.")
             return None
@@ -105,9 +79,57 @@ def fetch_solar_power_surplus():
         logging.error(f"Data query failed with status {response.status_code}.")
         return None
 
-@app.route('/solar_power_surplus', methods=['GET'])
-def get_solar_power_surplus():
-    data = fetch_solar_power_surplus()
+def fetch_grid_export():
+    logging.debug("Fetching grid export data...")
+    query = f"""
+    {{
+      "type": "flux",
+      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Grid.Export\\" or r._field == \\"Energy.Battery.Charge.Level\\" or r._field == \\"Power.Battery.Charge.Discharge\\") |> last()",
+      "orgID": "{INFLUX_ORG_ID}"
+    }}
+    """
+
+    headers = {
+        "Authorization": f"Token {INFLUX_TOKEN}",
+        "Accept": "application/json",
+        "Content-type": "application/json"
+    }
+
+    response = requests.post(INFLUX_API, headers=headers, data=query)
+    logging.debug(f"Curl status: {response.status_code}")
+    logging.debug(f"Curl output: {response.text}")
+
+    if response.status_code == 200:
+        data = StringIO(response.text)
+        df = pd.read_csv(data)
+        if not df.empty:
+            grid_export = df[df['_field'] == 'Power.Grid.Export']['_value'].iloc[-1]
+            battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
+            battery_charge_discharge = df[df['_field'] == 'Power.Battery.Charge.Discharge']['_value'].iloc[-1]
+
+            if battery_charge_level > BATTERY_STATE_OF_CHARGE_THRESHOLD:
+                grid_export += min(battery_charge_discharge, -BATTERY_WATT_ADDER)
+                grid_export = max(grid_export, grid_export + BATTERY_WATT_ADDER)
+
+            return {"grid_power_draw": float(grid_export)}
+        else:
+            logging.error("DataFrame is empty or required columns are missing.")
+            return None
+    else:
+        logging.error(f"Data query failed with status {response.status_code}.")
+        return None
+
+@app.route('/solar_generation', methods=['GET'])
+def get_solar_generation():
+    data = fetch_solar_generation()
+    if data is not None:
+        return jsonify(data)
+    else:
+        return jsonify({"error": "Failed to fetch data"}), 500
+
+@app.route('/grid_export', methods=['GET'])
+def get_grid_export():
+    data = fetch_grid_export()
     if data is not None:
         return jsonify(data)
     else:
@@ -115,4 +137,5 @@ def get_solar_power_surplus():
 
 if __name__ == "__main__":
     logging.debug("Script started")
+    app.run(host=HTTP_HOST, port=HTTP_PORT, debug=True)
     app.run(host=HTTP_HOST, port=HTTP_PORT, debug=True)

@@ -1,6 +1,6 @@
 {
     "rtype": 1,  
-    "name": "Enpal Solar Surplus Meter", 
+    "name": "Enpal Solar Generation vMeter", 
     "manufacturer": "Enpal",
     "dev_type": "solar_surplus", 
     "delay_accumulated": false,  
@@ -26,26 +26,8 @@
       "fixed": "0"
     },
     "power_w": {
-      "address": "GET /solar_power_surplus",
-      "query": "solar_power_surplus",
-      "type": "float",
-      "resolution": 1.0
-    },
-    "house_usage_w": {
-      "address": "GET /solar_power_surplus",
-      "query": "house_usage",
-      "type": "float",
-      "resolution": 1.0
-    },
-    "solar_power_generation_w": {
-      "address": "GET /solar_power_surplus",
+      "address": "GET /solar_generation",
       "query": "solar_power_generation",
-      "type": "float",
-      "resolution": 1.0
-    },
-    "grid_power_draw_w": {
-      "address": "GET /solar_power_surplus",
-      "query": "grid_power_draw",
       "type": "float",
       "resolution": 1.0
     }
