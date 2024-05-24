@@ -44,7 +44,7 @@ def fetch_solar_generation():
     query = f"""
     {{
       "type": "flux",
-      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Production.Total\\" or r._field == \\"Energy.Battery.Charge.Level\\" or r._field == \\"Power.Battery.Charge.Discharge\\") |> last()",
+      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Production.Total\\") |> last()",
       "orgID": "{INFLUX_ORG_ID}"
     }}
     """
@@ -64,13 +64,6 @@ def fetch_solar_generation():
         df = pd.read_csv(data)
         if not df.empty:
             solar_generation = df[df['_field'] == 'Power.Production.Total']['_value'].iloc[-1]
-            battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
-            battery_charge_discharge = df[df['_field'] == 'Power.Battery.Charge.Discharge']['_value'].iloc[-1]
-
-            if battery_charge_level > BATTERY_STATE_OF_CHARGE_THRESHOLD:
-                solar_generation += min(battery_charge_discharge, -BATTERY_WATT_ADDER)
-                solar_generation = max(solar_generation, solar_generation + BATTERY_WATT_ADDER)
-
             return {"solar_power_generation": float(solar_generation)}
         else:
             logging.error("DataFrame is empty or required columns are missing.")
@@ -79,12 +72,12 @@ def fetch_solar_generation():
         logging.error(f"Data query failed with status {response.status_code}.")
         return None
 
-def fetch_grid_export():
+def fetch_grid_power():
     logging.debug("Fetching grid import/export data...")
     query = f"""
     {{
       "type": "flux",
-      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Grid.Export\\" or r._field == \\"Power.Grid.Import\\" or r._field == \\"Energy.Battery.Charge.Level\\" or r._field == \\"Power.Battery.Charge.Discharge\\") |> last()",
+      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Grid.Export\\" or r._field == \\"Power.Grid.Import\\") |> last()",
       "orgID": "{INFLUX_ORG_ID}"
     }}
     """
@@ -103,20 +96,46 @@ def fetch_grid_export():
         data = StringIO(response.text)
         df = pd.read_csv(data)
         if not df.empty:
-            grid_export = df[df['_field'] == 'Power.Grid.Export']['_value'].iloc[-1]
-            grid_import = df[df['_field'] == 'Power.Grid.Import']['_value'].iloc[-1]
-            battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
+            grid_export = df[df['_field'] == 'Power.Grid.Export']['_value'].iloc[-1] if 'Power.Grid.Export' in df['_field'].values else 0
+            grid_import = df[df['_field'] == 'Power.Grid.Import']['_value'].iloc[-1] if 'Power.Grid.Import' in df['_field'].values else 0
+            grid_power = float(grid_export) - float(grid_import)
+            return {"grid_power": grid_power}
+        else:
+            logging.error("DataFrame is empty or required columns are missing.")
+            return None
+    else:
+        logging.error(f"Data query failed with status {response.status_code}.")
+        return None
+
+def fetch_battery_data():
+    logging.debug("Fetching battery data...")
+    query = f"""
+    {{
+      "type": "flux",
+      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Battery.Charge.Discharge\\" or r._field == \\"Energy.Battery.Charge.Level\\") |> last()",
+      "orgID": "{INFLUX_ORG_ID}"
+    }}
+    """
+
+    headers = {
+        "Authorization": f"Token {INFLUX_TOKEN}",
+        "Accept": "application/json",
+        "Content-type": "application/json"
+    }
+
+    response = requests.post(INFLUX_API, headers=headers, data=query)
+    logging.debug(f"Curl status: {response.status_code}")
+    logging.debug(f"Curl output: {response.text}")
+
+    if response.status_code == 200:
+        data = StringIO(response.text)
+        df = pd.read_csv(data)
+        if not df.empty:
             battery_charge_discharge = df[df['_field'] == 'Power.Battery.Charge.Discharge']['_value'].iloc[-1]
-
-            if battery_charge_level > BATTERY_STATE_OF_CHARGE_THRESHOLD:
-                grid_export += min(battery_charge_discharge, -BATTERY_WATT_ADDER)
-                grid_export = max(grid_export, grid_export + BATTERY_WATT_ADDER)
-                grid_import += min(battery_charge_discharge, -BATTERY_WATT_ADDER)
-                grid_import = max(grid_import, grid_import + BATTERY_WATT_ADDER)
-
+            battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
             return {
-                "grid_power_export": float(grid_export),
-                "grid_power_import": float(grid_import)
+                "battery_charge_discharge": float(battery_charge_discharge),
+                "battery_charge_level": float(battery_charge_level)
             }
         else:
             logging.error("DataFrame is empty or required columns are missing.")
@@ -133,9 +152,17 @@ def get_solar_generation():
     else:
         return jsonify({"error": "Failed to fetch data"}), 500
 
-@app.route('/grid_export', methods=['GET'])
-def get_grid_export():
-    data = fetch_grid_export()
+@app.route('/grid_power', methods=['GET'])
+def get_grid_power():
+    data = fetch_grid_power()
+    if data is not None:
+        return jsonify(data)
+    else:
+        return jsonify({"error": "Failed to fetch data"}), 500
+
+@app.route('/battery_data', methods=['GET'])
+def get_battery_data():
+    data = fetch_battery_data()
     if data is not None:
         return jsonify(data)
     else:

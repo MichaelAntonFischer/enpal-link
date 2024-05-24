@@ -1,0 +1,41 @@
+{
+    "rtype": 1,  
+    "name": "Enpal Battery Data Meter", 
+    "manufacturer": "Enpal",
+    "dev_type": "battery_data", 
+    "delay_accumulated": false,  
+  
+    "type_designation": {
+      "address": "",
+      "type": "string",
+      "fixed": "Battery Data Meter"
+    },
+    "version": {
+      "address": "",
+      "type": "string",
+      "fixed": "1.0"
+    },
+    "firmware_version": {
+      "address": "",
+      "type": "string",
+      "fixed": "1.0"
+    },
+    "serial": {
+      "address": "",
+      "type": "string",
+      "fixed": "0"
+    },
+    "battery_charge_discharge_w": {
+        "address": "GET /battery_data",
+        "query": "battery_charge_discharge",
+        "type": "float",
+        "resolution": 1.0
+    },
+    "battery_charge_level_percent": {
+        "address": "GET /battery_data",
+        "query": "battery_charge_level",
+        "type": "float",
+        "resolution": 1.0
+    }
+}
+
