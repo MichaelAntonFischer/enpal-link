@@ -1,6 +1,6 @@
 {
     "rtype": 1,  
-    "name": "Enpal Solar Generation vMeter", 
+    "name": "Enpal Solar Export vMeter", 
     "manufacturer": "Enpal",
     "dev_type": "solar_surplus", 
     "delay_accumulated": false,  
