@@ -5,12 +5,13 @@ from io import StringIO
 import logging
 from flask import Flask, jsonify
 from dotenv import load_dotenv
+from threading import Timer
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Configure logging to log to stdout and stderr
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
 # Read environment variables
 INFLUX_HOST = os.getenv("INFLUX_HOST")
@@ -25,18 +26,41 @@ HTTP_PORT = int(os.getenv("HTTP_PORT", 5000))
 INFLUX_API = f"http://{INFLUX_HOST}:8086/api/v2/query?orgID={INFLUX_ORG_ID}"
 
 # Log the environment variables for debugging
-logging.debug(f"INFLUX_API: {INFLUX_API}")
-logging.debug(f"INFLUX_TOKEN: {INFLUX_TOKEN}")
-logging.debug(f"INFLUX_BUCKET: {INFLUX_BUCKET}")
-logging.debug(f"INFLUX_ORG_ID: {INFLUX_ORG_ID}")
-logging.debug(f"QUERY_RANGE_START: {QUERY_RANGE_START}")
-logging.debug(f"HTTP_HOST: {HTTP_HOST}")
-logging.debug(f"HTTP_PORT: {HTTP_PORT}")
+logging.info(f"INFLUX_API: {INFLUX_API}")
+logging.info(f"INFLUX_TOKEN: {INFLUX_TOKEN}")
+logging.info(f"INFLUX_BUCKET: {INFLUX_BUCKET}")
+logging.info(f"INFLUX_ORG_ID: {INFLUX_ORG_ID}")
+logging.info(f"QUERY_RANGE_START: {QUERY_RANGE_START}")
+logging.info(f"HTTP_HOST: {HTTP_HOST}")
+logging.info(f"HTTP_PORT: {HTTP_PORT}")
 
 app = Flask(__name__)
 
+# Global variables to store the cached data
+cached_solar_generation = None
+cached_grid_power = None
+cached_battery_data = None
+
+def fetch_data():
+    global cached_solar_generation, cached_grid_power, cached_battery_data
+
+    # Fetch solar generation data
+    cached_solar_generation = fetch_solar_generation()
+    logging.info(f"Cached Solar Generation Data: {cached_solar_generation}")
+
+    # Fetch grid power data
+    cached_grid_power = fetch_grid_power()
+    logging.info(f"Cached Grid Power Data: {cached_grid_power}")
+
+    # Fetch battery data
+    cached_battery_data = fetch_battery_data()
+    logging.info(f"Cached Battery Data: {cached_battery_data}")
+
+    # Schedule the next fetch in 60 seconds
+    Timer(60, fetch_data).start()
+
 def fetch_solar_generation():
-    logging.debug("Fetching solar generation data...")
+    logging.info("Fetching solar generation data...")
     query = f"""
     {{
       "type": "flux",
@@ -52,8 +76,8 @@ def fetch_solar_generation():
     }
 
     response = requests.post(INFLUX_API, headers=headers, data=query)
-    logging.debug(f"Curl status: {response.status_code}")
-    logging.debug(f"Curl output: {response.text}")
+    logging.info(f"Curl status: {response.status_code}")
+    logging.info(f"Curl output: {response.text}")
 
     if response.status_code == 200:
         data = StringIO(response.text)
@@ -69,7 +93,7 @@ def fetch_solar_generation():
         return None
 
 def fetch_grid_power():
-    logging.debug("Fetching grid import/export data...")
+    logging.info("Fetching grid import/export data...")
     query = f"""
     {{
       "type": "flux",
@@ -85,8 +109,8 @@ def fetch_grid_power():
     }
 
     response = requests.post(INFLUX_API, headers=headers, data=query)
-    logging.debug(f"Curl status: {response.status_code}")
-    logging.debug(f"Curl output: {response.text}")
+    logging.info(f"Curl status: {response.status_code}")
+    logging.info(f"Curl output: {response.text}")
 
     if response.status_code == 200:
         data = StringIO(response.text)
@@ -104,7 +128,7 @@ def fetch_grid_power():
         return None
 
 def fetch_battery_data():
-    logging.debug("Fetching battery data...")
+    logging.info("Fetching battery data...")
     query = f"""
     {{
       "type": "flux",
@@ -120,8 +144,8 @@ def fetch_battery_data():
     }
 
     response = requests.post(INFLUX_API, headers=headers, data=query)
-    logging.debug(f"Curl status: {response.status_code}")
-    logging.debug(f"Curl output: {response.text}")
+    logging.info(f"Curl status: {response.status_code}")
+    logging.info(f"Curl output: {response.text}")
 
     if response.status_code == 200:
         data = StringIO(response.text)
@@ -142,28 +166,17 @@ def fetch_battery_data():
 
 @app.route('/solar_generation', methods=['GET'])
 def get_solar_generation():
-    data = fetch_solar_generation()
-    if data is not None:
-        return jsonify(data)
-    else:
-        return jsonify({"error": "Failed to fetch data"}), 500
+    return jsonify(cached_solar_generation) if cached_solar_generation else jsonify({"error": "Failed to fetch data"}), 500
 
 @app.route('/grid_power', methods=['GET'])
 def get_grid_power():
-    data = fetch_grid_power()
-    if data is not None:
-        return jsonify(data)
-    else:
-        return jsonify({"error": "Failed to fetch data"}), 500
+    return jsonify(cached_grid_power) if cached_grid_power else jsonify({"error": "Failed to fetch data"}), 500
 
 @app.route('/battery_data', methods=['GET'])
 def get_battery_data():
-    data = fetch_battery_data()
-    if data is not None:
-        return jsonify(data)
-    else:
-        return jsonify({"error": "Failed to fetch data"}), 500
+    return jsonify(cached_battery_data) if cached_battery_data else jsonify({"error": "Failed to fetch data"}), 500
 
 if __name__ == "__main__":
-    logging.debug("Script started")
+    logging.info("Script started")
+    fetch_data()  # Start the initial data fetch
     app.run(host=HTTP_HOST, port=HTTP_PORT, debug=True)
