@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 import pandas as pd
 from io import StringIO
@@ -76,8 +77,8 @@ def fetch_solar_generation():
     }
 
     response = requests.post(INFLUX_API, headers=headers, data=query)
-    logging.info(f"Curl status: {response.status_code}")
-    logging.info(f"Curl output: {response.text}")
+    logging.info(f"Response status: {response.status_code}")
+    logging.info(f"Response output: {response.text}")
 
     if response.status_code == 200:
         data = StringIO(response.text)
@@ -109,8 +110,8 @@ def fetch_grid_power():
     }
 
     response = requests.post(INFLUX_API, headers=headers, data=query)
-    logging.info(f"Curl status: {response.status_code}")
-    logging.info(f"Curl output: {response.text}")
+    logging.info(f"Response status: {response.status_code}")
+    logging.info(f"Response output: {response.text}")
 
     if response.status_code == 200:
         data = StringIO(response.text)
@@ -144,8 +145,8 @@ def fetch_battery_data():
     }
 
     response = requests.post(INFLUX_API, headers=headers, data=query)
-    logging.info(f"Curl status: {response.status_code}")
-    logging.info(f"Curl output: {response.text}")
+    logging.info(f"Response status: {response.status_code}")
+    logging.info(f"Response output: {response.text}")
 
     if response.status_code == 200:
         data = StringIO(response.text)
@@ -179,4 +180,5 @@ def get_battery_data():
 if __name__ == "__main__":
     logging.info("Script started")
     fetch_data()  # Start the initial data fetch
+    time.sleep(90)
     app.run(host=HTTP_HOST, port=HTTP_PORT, debug=True)
