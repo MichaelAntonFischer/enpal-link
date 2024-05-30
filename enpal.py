@@ -167,15 +167,24 @@ def fetch_battery_data():
 
 @app.route('/solar_generation', methods=['GET'])
 def get_solar_generation():
-    return jsonify(cached_solar_generation) if cached_solar_generation else jsonify({"error": "Failed to fetch data"}), 500
+    if cached_solar_generation:
+        return jsonify(cached_solar_generation), 200
+    else:
+        return jsonify({"error": "Failed to fetch data"}), 500
 
 @app.route('/grid_power', methods=['GET'])
 def get_grid_power():
-    return jsonify(cached_grid_power) if cached_grid_power else jsonify({"error": "Failed to fetch data"}), 500
+    if cached_grid_power:
+        return jsonify(cached_grid_power), 200
+    else:
+        return jsonify({"error": "Failed to fetch data"}), 500
 
 @app.route('/battery_data', methods=['GET'])
 def get_battery_data():
-    return jsonify(cached_battery_data) if cached_battery_data else jsonify({"error": "Failed to fetch data"}), 500
+    if cached_battery_data:
+        return jsonify(cached_battery_data), 200
+    else:
+        return jsonify({"error": "Failed to fetch data"}), 500
 
 if __name__ == "__main__":
     logging.info("Script started")
