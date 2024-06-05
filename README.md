@@ -71,7 +71,7 @@ Add the User-Defined Meter:
 
 Select "User-defined meters" from the configuration options.
 Click on "Add new meter" and choose "HTTP/JSON" as the meter type.
-Upload the Enpal_Solar_Meter.json (repeat with other desired meters) file from this repo.
+Upload the Enpal_Solar_Generation.json (repeat with other desired meters) file from this repo.
 
 #### Set Up a Solar Surplus Charging Rule:
 
