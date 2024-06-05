@@ -88,6 +88,15 @@ Testing the Endpoint
 
 If you want you can also add the other meters for a more intricate pv and battery control.
 
+Example Meters and Config:
+![C5E933B3-BEF1-47C2-BEEC-2A6BCA6B790B](https://github.com/MichaelAntonFischer/enpal-link/assets/93607398/b6a0688f-075f-4ba8-8b62-b2e5247ece27)
+
+![17C70A87-CC9D-4CAF-8BE7-8690A8F003A6](https://github.com/MichaelAntonFischer/enpal-link/assets/93607398/0f45e0ac-276c-40e2-ac22-56fe7732cd82)
+
+![F8DCC261-719B-4233-B216-49EE3B75FBC3](https://github.com/MichaelAntonFischer/enpal-link/assets/93607398/0b213aea-8797-456a-a3b2-dce3fc153183)
+
+![662C2D54-7295-43DB-93D7-34459769D416](https://github.com/MichaelAntonFischer/enpal-link/assets/93607398/d9c02426-fb3e-487f-ba8e-23739b82eb98)
+
 ### You can test the endpoint using the curl command:
 
 ```bash
@@ -105,6 +114,21 @@ docker logs -f enpal-link
 Ensure the server running the Flask application is accessible from the device running the cFos Charging Manager.
 Ensure the JSON response from the Flask endpoint matches the expected format.
 If the script says "Organisation not found" or something like this, Enpal might have given you the ClientID instead of OrgID. You can find the correct ID in the InfluxDB.
+
+IMPORTANT:
+At the time of this writing the enpal box reboots during the night and doesn't react kindly to requests during boot. It is recommended to shutdown the virtual meters from 11p.m. to 5a.m.
+
+```bash
+crontab -e
+```
+Add the following lines:
+```bash
+0 5 * * * cd /home/[USER_NAME]/enpal-link && /usr/local/bin/docker-compose up -d >>>
+0 22 * * * cd /home/[USER_NAME]/enpal-link && /usr/local/bin/docker-compose down >>>
+```
+
+Replace [USER_NAME] with your username. If you didn't clone the repo to home dir, please adjust the full path. Same for docker-compose.
+
 
 ## License
 
