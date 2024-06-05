@@ -78,11 +78,8 @@ Upload the Enpal_Solar_Generation.json (repeat with other desired meters) file f
 Go to the "Charging Rules" section in the cFos Charging Manager.
 Add a new rule and select "Surplus Charging" as the mode.
 Configure the rule to use the "Enpal Solar Generation Meter" you just created.
-Example Configuration for Surplus Charging Rule:
 
-Meter: Enpal Solar Meter
-Start Current: 6A (or your desired start current)
-Stop Current: 0A (or your desired stop current)
+Example Configuration for Surplus Charging Rule:
 
 Example Meters and Config:
 ![C5E933B3-BEF1-47C2-BEEC-2A6BCA6B790B](https://github.com/MichaelAntonFischer/enpal-link/assets/93607398/b6a0688f-075f-4ba8-8b62-b2e5247ece27)
