@@ -46,7 +46,7 @@ INFLUX_TOKEN="YOUR_INFLUX_TOKEN" (You can get this info from Enpal customer serv
 HTTP_HOST="0.0.0.0" (You can leave as is, if running in docker)<br />
 HTTP_PORT="5000" (You can leave as is, if running in docker)<br />
 
-### Step 3: Build and Run the Docker Container (Optional)
+### Step 3.1: Build and Run the Docker Container (Alternative to 3.2)
 Navigate to the cloned repository directory and build the Docker container:
 
 ```bash
@@ -57,7 +57,7 @@ docker run -d -p 5000:5000 --name enpal-link enpal-link
 
 This will build and start the Docker container, running the Flask application that serves the solar power surplus data.
 
-### Step 3: Use prebuilt docker image via docker-compose (Alternative)
+### Step 3.2: Use prebuilt docker image via docker-compose (Alternative to 3.1)
 ```bash
 ./start_enpal.sh
 ```
