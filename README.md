@@ -71,7 +71,7 @@ Add the User-Defined Meter:
 
 Select "User-defined meters" from the configuration options.
 Click on "Add new meter" and choose "HTTP/JSON" as the meter type.
-Upload the Enpal_Surplus_Meter.json file from this repo.
+Upload the Enpal_Surplus_Meter.json (repeat with other desired meters) file from this repo.
 
 #### Set Up a Solar Surplus Charging Rule:
 
@@ -83,10 +83,6 @@ Example Configuration for Surplus Charging Rule:
 Meter: Enpal Solar Meter
 Start Current: 6A (or your desired start current)
 Stop Current: 0A (or your desired stop current)
-Priority: High
-Testing the Endpoint
-
-If you want you can also add the other meters for a more intricate pv and battery control.
 
 Example Meters and Config:
 ![C5E933B3-BEF1-47C2-BEEC-2A6BCA6B790B](https://github.com/MichaelAntonFischer/enpal-link/assets/93607398/b6a0688f-075f-4ba8-8b62-b2e5247ece27)
