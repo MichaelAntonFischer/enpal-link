@@ -91,10 +91,10 @@ Configure the rule to use the "Enpal Solar Generation Meter" you just created.
 ### You can test the endpoint using the curl command:
 
 ```bash
-curl http//:[INFLUX_HOST]:5000/solar_power_surplus
+curl http//:[INFLUX_HOST]:5000/solar_power
 ```
 
-The expected response should reflect the calculated solar power surplus considering the battery status.
+The expected response should reflect the calculated solar power.
 
 ## Troubleshooting
 
