@@ -23,7 +23,7 @@ Copy the start_enpal.sh script to a directory above the cloned repository:
 ```bash
 cp enpal-link/start_enpal.sh .
 ```
-This step is recommended to not overwrite your config when pulling new updates from the git repo and not expose your data to the git directory.
+This step is recommended to not overwrite your config when pulling new updates from the git repo.
 
 ### Make the script executable:
 
