@@ -7,6 +7,8 @@ import logging
 from flask import Flask, jsonify
 from dotenv import load_dotenv
 from threading import Timer
+from datetime import datetime
+import pytz
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,6 +24,9 @@ INFLUX_ORG_ID = os.getenv("INFLUX_ORG_ID")
 QUERY_RANGE_START = os.getenv("QUERY_RANGE_START", "-5m")  # Default to -5m if not set
 HTTP_HOST = os.getenv("HTTP_HOST", "0.0.0.0")
 HTTP_PORT = int(os.getenv("HTTP_PORT", 5000))
+START_TIME = os.getenv("START_TIME", "05:00")  
+END_TIME = os.getenv("END_TIME", "22:00")  
+TIMEZONE = os.getenv("TIMEZONE", "CET")  
 
 # Construct the INFLUX_API URL
 INFLUX_API = f"http://{INFLUX_HOST}:8086/api/v2/query?orgID={INFLUX_ORG_ID}"
@@ -34,6 +39,9 @@ logging.info(f"INFLUX_ORG_ID: {INFLUX_ORG_ID}")
 logging.info(f"QUERY_RANGE_START: {QUERY_RANGE_START}")
 logging.info(f"HTTP_HOST: {HTTP_HOST}")
 logging.info(f"HTTP_PORT: {HTTP_PORT}")
+logging.info(f"START_TIME: {START_TIME}")
+logging.info(f"END_TIME: {END_TIME}")
+logging.info(f"TIMEZONE: {TIMEZONE}")
 
 app = Flask(__name__)
 
@@ -42,20 +50,38 @@ cached_solar_generation = None
 cached_grid_power = None
 cached_battery_data = None
 
+def is_within_time_range():
+    """Check if the current time is within the specified start and end time in the given timezone."""
+    tz = pytz.timezone(TIMEZONE)
+    now = datetime.now(tz).time()
+    start_time = datetime.strptime(START_TIME, "%H:%M").time()
+    end_time = datetime.strptime(END_TIME, "%H:%M").time()
+    return start_time <= now <= end_time
+
 def fetch_data():
     global cached_solar_generation, cached_grid_power, cached_battery_data
 
-    # Fetch solar generation data
-    cached_solar_generation = fetch_solar_generation()
-    logging.info(f"Cached Solar Generation Data: {cached_solar_generation}")
+    if is_within_time_range():
+        # Fetch solar generation data
+        cached_solar_generation = fetch_solar_generation()
+        logging.info(f"Cached Solar Generation Data: {cached_solar_generation}")
 
-    # Fetch grid power data
-    cached_grid_power = fetch_grid_power()
-    logging.info(f"Cached Grid Power Data: {cached_grid_power}")
+        # Fetch grid power data
+        cached_grid_power = fetch_grid_power()
+        logging.info(f"Cached Grid Power Data: {cached_grid_power}")
 
-    # Fetch battery data
-    cached_battery_data = fetch_battery_data()
-    logging.info(f"Cached Battery Data: {cached_battery_data}")
+        # Fetch battery data
+        cached_battery_data = fetch_battery_data()
+        logging.info(f"Cached Battery Data: {cached_battery_data}")
+    else:
+        # Set cached data to 0 when outside the specified time range
+        cached_solar_generation = {"solar_power_generation": 0}
+        cached_grid_power = {"grid_power": 0}
+        cached_battery_data = {
+            "battery_charge_discharge": 0,
+            "battery_charge_level": 0
+        }
+        logging.info("Outside specified time range. Cached data set to 0.")
 
     # Schedule the next fetch in 60 seconds
     Timer(60, fetch_data).start()
