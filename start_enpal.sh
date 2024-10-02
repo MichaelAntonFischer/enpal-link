@@ -1,12 +1,14 @@
 #!/bin/bash
 
 # Set environment variables
-INFLUX_HOST="YOUR_INFLUX_HOST"
 INFLUX_ORG_ID="YOUR_INFLUX_ORG_ID"
 INFLUX_BUCKET="YOUR_INFLUX_BUCKET"
 INFLUX_TOKEN="YOUR_INFLUX_TOKEN"
 HTTP_HOST="0.0.0.0"
 HTTP_PORT="5000"
+
+# Set multiple IP addresses for INFLUX_HOSTS
+os.environ["INFLUX_HOSTS"] = "192.168.1.10,192.168.1.11,192.168.1.12"
 
 # Create an .env file for Docker Compose
 cat <<EOF > enpal-link/.env
