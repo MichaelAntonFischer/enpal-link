@@ -40,6 +40,12 @@ TIMEZONE = os.getenv("TIMEZONE", "CET")
 # Cycle through the IP addresses
 influx_hosts_cycle = cycle(INFLUX_HOSTS)
 
+# Global variables to store the cached data and health status
+cached_solar_generation = None
+cached_grid_power = None
+cached_battery_data = None
+data_fetch_successful = False
+
 def get_influx_api():
     """Get the next INFLUX_API URL from the cycle of IP addresses."""
     current_host = next(influx_hosts_cycle)
@@ -59,11 +65,6 @@ logging.info(f"TIMEZONE: {TIMEZONE}")
 
 app = Flask(__name__)
 
-# Global variables to store the cached data
-cached_solar_generation = None
-cached_grid_power = None
-cached_battery_data = None
-
 def is_within_time_range():
     """Check if the current time is within the specified start and end time in the given timezone."""
     tz = pytz.timezone(TIMEZONE)
@@ -73,7 +74,9 @@ def is_within_time_range():
     return start_time <= now <= end_time
 
 def fetch_data():
-    global cached_solar_generation, cached_grid_power, cached_battery_data
+    global cached_solar_generation, cached_grid_power, cached_battery_data, data_fetch_successful
+
+    data_fetch_successful = False  # Reset the flag at the start of each fetch
 
     if is_within_time_range():
         # Fetch solar generation data
@@ -87,6 +90,10 @@ def fetch_data():
         # Fetch battery data
         cached_battery_data = fetch_battery_data()
         logging.info(f"Cached Battery Data: {cached_battery_data}")
+
+        # Check if all data fetches were successful
+        if cached_solar_generation and cached_grid_power and cached_battery_data:
+            data_fetch_successful = True
     else:
         # Set cached data to 0 when outside the specified time range
         cached_solar_generation = {"solar_power_generation": 0}
@@ -96,6 +103,7 @@ def fetch_data():
             "battery_charge_level": 0
         }
         logging.info("Outside specified time range. Cached data set to 0.")
+        data_fetch_successful = True  # Consider it successful since it's outside the time range
 
     # Schedule the next fetch in 60 seconds
     Timer(60, fetch_data).start()
@@ -154,22 +162,26 @@ def fetch_grid_power():
 
     for _ in range(len(INFLUX_HOSTS)):
         INFLUX_API = get_influx_api()
-        response = requests.post(INFLUX_API, headers=headers, data=query)
-        logging.info(f"Response status: {response.status_code} from {INFLUX_API}")
-        logging.info(f"Response output: {response.text}")
+        logging.info(f"INFLUX_API: {INFLUX_API}")
+        try:
+            response = requests.post(INFLUX_API, headers=headers, data=query)
+            logging.info(f"Response status: {response.status_code} from {INFLUX_API}")
+            logging.info(f"Response output: {response.text}")
 
-        if response.status_code == 200:
-            data = StringIO(response.text)
-            df = pd.read_csv(data)
-            if not df.empty:
-                grid_export = df[df['_field'] == 'Power.Grid.Export']['_value'].iloc[-1] if 'Power.Grid.Export' in df['_field'].values else 0
-                grid_import = df[df['_field'] == 'Power.Grid.Import']['_value'].iloc[-1] if 'Power.Grid.Import' in df['_field'].values else 0
-                grid_power = float(grid_export) - float(grid_import)
-                return {"grid_power": grid_power}
+            if response.status_code == 200:
+                data = StringIO(response.text)
+                df = pd.read_csv(data)
+                if not df.empty:
+                    grid_export = df[df['_field'] == 'Power.Grid.Export']['_value'].iloc[-1] if 'Power.Grid.Export' in df['_field'].values else 0
+                    grid_import = df[df['_field'] == 'Power.Grid.Import']['_value'].iloc[-1] if 'Power.Grid.Import' in df['_field'].values else 0
+                    grid_power = float(grid_export) - float(grid_import)
+                    return {"grid_power": grid_power}
+                else:
+                    logging.error("DataFrame is empty or required columns are missing.")
             else:
-                logging.error("DataFrame is empty or required columns are missing.")
-        else:
-            logging.error(f"Data query failed with status {response.status_code}.")
+                logging.error(f"Data query failed with status {response.status_code}.")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Request failed: {e}")
 
     return None
 
@@ -191,24 +203,28 @@ def fetch_battery_data():
 
     for _ in range(len(INFLUX_HOSTS)):
         INFLUX_API = get_influx_api()
-        response = requests.post(INFLUX_API, headers=headers, data=query)
-        logging.info(f"Response status: {response.status_code} from {INFLUX_API}")
-        logging.info(f"Response output: {response.text}")
+        logging.info(f"INFLUX_API: {INFLUX_API}")
+        try:
+            response = requests.post(INFLUX_API, headers=headers, data=query)
+            logging.info(f"Response status: {response.status_code} from {INFLUX_API}")
+            logging.info(f"Response output: {response.text}")
 
-        if response.status_code == 200:
-            data = StringIO(response.text)
-            df = pd.read_csv(data)
-            if not df.empty:
-                battery_charge_discharge = df[df['_field'] == 'Power.Battery.Charge.Discharge']['_value'].iloc[-1]
-                battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
-                return {
-                    "battery_charge_discharge": float(battery_charge_discharge),
-                    "battery_charge_level": float(battery_charge_level)
-                }
+            if response.status_code == 200:
+                data = StringIO(response.text)
+                df = pd.read_csv(data)
+                if not df.empty:
+                    battery_charge_discharge = df[df['_field'] == 'Power.Battery.Charge.Discharge']['_value'].iloc[-1]
+                    battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
+                    return {
+                        "battery_charge_discharge": float(battery_charge_discharge),
+                        "battery_charge_level": float(battery_charge_level)
+                    }
+                else:
+                    logging.error("DataFrame is empty or required columns are missing.")
             else:
-                logging.error("DataFrame is empty or required columns are missing.")
-        else:
-            logging.error(f"Data query failed with status {response.status_code}.")
+                logging.error(f"Data query failed with status {response.status_code}.")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Request failed: {e}")
 
     return None
 
@@ -241,7 +257,10 @@ def get_battery_data():
 
 @app.route('/health', methods=['GET'])
 def health_check():
-    return jsonify({"status": "healthy"}), 200
+    if data_fetch_successful:
+        return jsonify({"status": "healthy"}), 200
+    else:
+        return jsonify({"status": "unhealthy"}), 500
 
 if __name__ == "__main__":
     logging.info("Script started")
