@@ -79,6 +79,7 @@ def fetch_data():
     data_fetch_successful = False  # Reset the flag at the start of each fetch
 
     if is_within_time_range():
+        logging.info("Within time range, fetching data...")
         # Fetch solar generation data
         cached_solar_generation = fetch_solar_generation()
         logging.info(f"Cached Solar Generation Data: {cached_solar_generation}")
@@ -94,6 +95,9 @@ def fetch_data():
         # Check if all data fetches were successful
         if cached_solar_generation and cached_grid_power and cached_battery_data:
             data_fetch_successful = True
+            logging.info("Data fetch successful.")
+        else:
+            logging.error("Data fetch failed for one or more components.")
     else:
         # Set cached data to 0 when outside the specified time range
         cached_solar_generation = {"solar_power_generation": 0}
