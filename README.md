@@ -109,6 +109,8 @@ If the script says "Organisation not found" or something like this, Enpal might 
 IMPORTANT:
 At the time of this writing the enpal box reboots during the night and doesn't react kindly to requests during boot. It is recommended to shutdown the virtual meters from 11p.m. to 5a.m.
 
+UPADTE: Since version 1.0.1 you can also set these times via command line parameters. This has the additional advantage that all values are a defined zero and not the last read value on the wallbox side.
+
 ```bash
 crontab -e
 ```
