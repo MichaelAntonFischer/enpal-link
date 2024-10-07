@@ -115,7 +115,7 @@ def fetch_data():
     Timer(60, fetch_data).start()
 
 def fetch_solar_generation():
-    logging.info("Fetching solar generation data...")
+    logging.debug("Fetching solar generation data...")
     query = f"""
     {{
       "type": "flux",
@@ -132,10 +132,10 @@ def fetch_solar_generation():
 
     for _ in range(len(INFLUX_HOSTS)):
         INFLUX_API = get_influx_api()
-        logging.info(f"INFLUX_API: {INFLUX_API}")
+        logging.debug(f"INFLUX_API: {INFLUX_API}")
         response = requests.post(INFLUX_API, headers=headers, data=query)
-        logging.info(f"Response status: {response.status_code} from {INFLUX_API}")
-        logging.info(f"Response output: {response.text}")
+        logging.debug(f"Response status: {response.status_code} from {INFLUX_API}")
+        logging.debug(f"Response output: {response.text}")
 
         if response.status_code == 200:
             data = StringIO(response.text)
@@ -151,7 +151,7 @@ def fetch_solar_generation():
     return None
 
 def fetch_grid_power():
-    logging.info("Fetching grid import/export data...")
+    logging.debug("Fetching grid import/export data...")
     query = f"""
     {{
       "type": "flux",
@@ -168,11 +168,11 @@ def fetch_grid_power():
 
     for _ in range(len(INFLUX_HOSTS)):
         INFLUX_API = get_influx_api()
-        logging.info(f"INFLUX_API: {INFLUX_API}")
+        logging.debug(f"INFLUX_API: {INFLUX_API}")
         try:
             response = requests.post(INFLUX_API, headers=headers, data=query)
-            logging.info(f"Response status: {response.status_code} from {INFLUX_API}")
-            logging.info(f"Response output: {response.text}")
+            logging.debug(f"Response status: {response.status_code} from {INFLUX_API}")
+            logging.debug(f"Response output: {response.text}")
 
             if response.status_code == 200:
                 data = StringIO(response.text)
@@ -192,7 +192,7 @@ def fetch_grid_power():
     return None
 
 def fetch_battery_data():
-    logging.info("Fetching battery data...")
+    logging.debug("Fetching battery data...")
     query = f"""
     {{
       "type": "flux",
@@ -209,11 +209,11 @@ def fetch_battery_data():
 
     for _ in range(len(INFLUX_HOSTS)):
         INFLUX_API = get_influx_api()
-        logging.info(f"INFLUX_API: {INFLUX_API}")
+        logging.debug(f"INFLUX_API: {INFLUX_API}")
         try:
             response = requests.post(INFLUX_API, headers=headers, data=query)
-            logging.info(f"Response status: {response.status_code} from {INFLUX_API}")
-            logging.info(f"Response output: {response.text}")
+            logging.debug(f"Response status: {response.status_code} from {INFLUX_API}")
+            logging.debug(f"Response output: {response.text}")
 
             if response.status_code == 200:
                 data = StringIO(response.text)
