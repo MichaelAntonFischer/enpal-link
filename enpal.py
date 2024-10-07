@@ -88,8 +88,58 @@ def is_within_time_range():
     end_time = datetime.strptime(END_TIME, "%H:%M").time()
     return start_time <= now <= end_time
 
+def verify_working_ip():
+    """Verify the last known working IP or find a new one."""
+    global last_working_ip
+    query = f"""
+    {{
+      "type": "flux",
+      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> limit(n:1)",
+      "orgID": "{INFLUX_ORG_ID}"
+    }}
+    """
+
+    headers = {
+        "Authorization": f"Token {INFLUX_TOKEN}",
+        "Accept": "application/json",
+        "Content-type": "application/json"
+    }
+
+    # Try the last known working IP first
+    if last_working_ip:
+        INFLUX_API = f"http://{last_working_ip}:8086/api/v2/query?orgID={INFLUX_ORG_ID}"
+        try:
+            response = requests.post(INFLUX_API, headers=headers, data=query)
+            if response.status_code == 200:
+                logging.info(f"Verified working IP: {last_working_ip}")
+                return True
+            else:
+                logging.error(f"Verification failed with status {response.status_code}.")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Verification request failed: {e}")
+            last_working_ip = None  # Reset last working IP if it fails
+
+    # If the last known IP fails, cycle through the list
+    for _ in range(len(INFLUX_HOSTS)):
+        INFLUX_API = get_influx_api()
+        try:
+            response = requests.post(INFLUX_API, headers=headers, data=query)
+            if response.status_code == 200:
+                last_working_ip = INFLUX_API.split("//")[1].split(":")[0]  # Update last working IP
+                logging.info(f"New working IP found: {last_working_ip}")
+                return True
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Verification request failed: {e}")
+
+    logging.error("No working IP found.")
+    return False
+
 def fetch_data():
     global cached_solar_generation, cached_grid_power, cached_battery_data, data_fetch_successful
+
+    if not verify_working_ip():
+        logging.error("Data fetch aborted due to no working IP.")
+        return
 
     data_fetch_successful = False  # Reset the flag at the start of each fetch
 
@@ -130,6 +180,7 @@ def fetch_data():
     Timer(60, fetch_data).start()
 
 def fetch_solar_generation():
+    global last_working_ip
     logging.debug("Fetching solar generation data...")
     query = f"""
     {{
@@ -145,6 +196,28 @@ def fetch_solar_generation():
         "Content-type": "application/json"
     }
 
+    # Try the last known working IP first
+    if last_working_ip:
+        INFLUX_API = f"http://{last_working_ip}:8086/api/v2/query?orgID={INFLUX_ORG_ID}"
+        try:
+            response = requests.post(INFLUX_API, headers=headers, data=query)
+            logging.debug(f"Response status: {response.status_code} from {INFLUX_API}")
+
+            if response.status_code == 200:
+                data = StringIO(response.text)
+                df = pd.read_csv(data)
+                if not df.empty:
+                    solar_generation = df[df['_field'] == 'Power.Production.Total']['_value'].iloc[-1]
+                    return {"solar_power_generation": float(solar_generation)}
+                else:
+                    logging.error("DataFrame is empty or required columns are missing.")
+            else:
+                logging.error(f"Data query failed with status {response.status_code}.")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Request failed: {e}")
+            last_working_ip = None  # Reset last working IP if it fails
+
+    # If the last known IP fails, cycle through the list
     for _ in range(len(INFLUX_HOSTS)):
         INFLUX_API = get_influx_api()
         logging.debug(f"Trying INFLUX_API: {INFLUX_API}")
@@ -165,8 +238,6 @@ def fetch_solar_generation():
                 logging.error(f"Data query failed with status {response.status_code}.")
         except requests.exceptions.RequestException as e:
             logging.error(f"Request failed: {e}")
-            # Move to the next IP in the cycle
-            last_working_ip = None
 
     return None
 
