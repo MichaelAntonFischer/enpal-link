@@ -46,10 +46,17 @@ cached_grid_power = None
 cached_battery_data = None
 data_fetch_successful = False
 
+# Global variable to store the last known working IP
+last_working_ip = None
+
 def get_influx_api():
     """Get the next INFLUX_API URL from the cycle of IP addresses."""
-    current_host = next(influx_hosts_cycle)
-    return f"http://{current_host}:8086/api/v2/query?orgID={INFLUX_ORG_ID}"
+    global last_working_ip
+    if last_working_ip:
+        return f"http://{last_working_ip}:8086/api/v2/query?orgID={INFLUX_ORG_ID}"
+    else:
+        current_host = next(influx_hosts_cycle)
+        return f"http://{current_host}:8086/api/v2/query?orgID={INFLUX_ORG_ID}"
 
 # Log the environment variables for debugging
 logging.info(f"INFLUX_HOSTS: {INFLUX_HOSTS}")
@@ -64,6 +71,14 @@ logging.info(f"END_TIME: {END_TIME}")
 logging.info(f"TIMEZONE: {TIMEZONE}")
 
 app = Flask(__name__)
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+
+# Adjust Flask's logger to only show HTTP requests in debug mode
+if not app.debug:
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.WARNING)  # Set to WARNING to suppress HTTP request logs
 
 def is_within_time_range():
     """Check if the current time is within the specified start and end time in the given timezone."""
@@ -132,21 +147,26 @@ def fetch_solar_generation():
 
     for _ in range(len(INFLUX_HOSTS)):
         INFLUX_API = get_influx_api()
-        logging.debug(f"INFLUX_API: {INFLUX_API}")
-        response = requests.post(INFLUX_API, headers=headers, data=query)
-        logging.debug(f"Response status: {response.status_code} from {INFLUX_API}")
-        logging.debug(f"Response output: {response.text}")
+        logging.debug(f"Trying INFLUX_API: {INFLUX_API}")
+        try:
+            response = requests.post(INFLUX_API, headers=headers, data=query)
+            logging.debug(f"Response status: {response.status_code} from {INFLUX_API}")
 
-        if response.status_code == 200:
-            data = StringIO(response.text)
-            df = pd.read_csv(data)
-            if not df.empty:
-                solar_generation = df[df['_field'] == 'Power.Production.Total']['_value'].iloc[-1]
-                return {"solar_power_generation": float(solar_generation)}
+            if response.status_code == 200:
+                data = StringIO(response.text)
+                df = pd.read_csv(data)
+                if not df.empty:
+                    solar_generation = df[df['_field'] == 'Power.Production.Total']['_value'].iloc[-1]
+                    last_working_ip = INFLUX_API.split("//")[1].split(":")[0]  # Update last working IP
+                    return {"solar_power_generation": float(solar_generation)}
+                else:
+                    logging.error("DataFrame is empty or required columns are missing.")
             else:
-                logging.error("DataFrame is empty or required columns are missing.")
-        else:
-            logging.error(f"Data query failed with status {response.status_code}.")
+                logging.error(f"Data query failed with status {response.status_code}.")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Request failed: {e}")
+            # Move to the next IP in the cycle
+            last_working_ip = None
 
     return None
 
@@ -168,7 +188,7 @@ def fetch_grid_power():
 
     for _ in range(len(INFLUX_HOSTS)):
         INFLUX_API = get_influx_api()
-        logging.debug(f"INFLUX_API: {INFLUX_API}")
+        logging.debug(f"Trying INFLUX_API: {INFLUX_API}")
         try:
             response = requests.post(INFLUX_API, headers=headers, data=query)
             logging.debug(f"Response status: {response.status_code} from {INFLUX_API}")
@@ -181,6 +201,7 @@ def fetch_grid_power():
                     grid_export = df[df['_field'] == 'Power.Grid.Export']['_value'].iloc[-1] if 'Power.Grid.Export' in df['_field'].values else 0
                     grid_import = df[df['_field'] == 'Power.Grid.Import']['_value'].iloc[-1] if 'Power.Grid.Import' in df['_field'].values else 0
                     grid_power = float(grid_export) - float(grid_import)
+                    last_working_ip = INFLUX_API.split("//")[1].split(":")[0]  # Update last working IP
                     return {"grid_power": grid_power}
                 else:
                     logging.error("DataFrame is empty or required columns are missing.")
@@ -188,6 +209,8 @@ def fetch_grid_power():
                 logging.error(f"Data query failed with status {response.status_code}.")
         except requests.exceptions.RequestException as e:
             logging.error(f"Request failed: {e}")
+            # Move to the next IP in the cycle
+            last_working_ip = None
 
     return None
 
@@ -209,7 +232,7 @@ def fetch_battery_data():
 
     for _ in range(len(INFLUX_HOSTS)):
         INFLUX_API = get_influx_api()
-        logging.debug(f"INFLUX_API: {INFLUX_API}")
+        logging.debug(f"Trying INFLUX_API: {INFLUX_API}")
         try:
             response = requests.post(INFLUX_API, headers=headers, data=query)
             logging.debug(f"Response status: {response.status_code} from {INFLUX_API}")
@@ -221,6 +244,7 @@ def fetch_battery_data():
                 if not df.empty:
                     battery_charge_discharge = df[df['_field'] == 'Power.Battery.Charge.Discharge']['_value'].iloc[-1]
                     battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
+                    last_working_ip = INFLUX_API.split("//")[1].split(":")[0]  # Update last working IP
                     return {
                         "battery_charge_discharge": float(battery_charge_discharge),
                         "battery_charge_level": float(battery_charge_level)
@@ -231,6 +255,8 @@ def fetch_battery_data():
                 logging.error(f"Data query failed with status {response.status_code}.")
         except requests.exceptions.RequestException as e:
             logging.error(f"Request failed: {e}")
+            # Move to the next IP in the cycle
+            last_working_ip = None
 
     return None
 
