@@ -1,12 +1,18 @@
 #!/bin/bash
 
 HEALTH_URL="http://localhost:5000/health"
-EMAIL="your_email@example.com"
+EMAIL="recipient@example.com"
 RETRY_COUNT=5
 SLEEP_INTERVAL=60
 
 log() {
     echo "$(date) - $1"
+}
+
+send_email() {
+    local subject="$1"
+    local message="$2"
+    echo -e "Subject: $subject\n\n$message" | msmtp $EMAIL
 }
 
 check_health() {
@@ -23,7 +29,7 @@ check_health() {
         sleep $SLEEP_INTERVAL
     done
     log "Server is down after $RETRY_COUNT attempts"
-    echo "Server is down after $RETRY_COUNT attempts" | mail -s "Server Down Alert" $EMAIL
+    send_email "Server Down Alert" "Server is down after $RETRY_COUNT attempts"
     return 1
 }
 
@@ -35,7 +41,7 @@ check_enpal_data() {
 
     if [ "$new_values_received" = false ]; then
         log "No new values received from enpal"
-        echo "No new values received from enpal" | mail -s "Enpal Data Alert" $EMAIL
+        send_email "Enpal Data Alert" "No new values received from enpal"
     else
         log "New values received from enpal"
     fi
