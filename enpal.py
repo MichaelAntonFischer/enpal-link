@@ -174,10 +174,9 @@ def fetch_data():
         logging.info("Outside specified time range. Cached data set to 0.")
         data_fetch_successful = True  # Consider it successful since it's outside the time range
 
-    # Log that the next fetch is scheduled
-    logging.info("Scheduling the next data fetch in 60 seconds.")
-    # Schedule the next fetch in 60 seconds
-    Timer(60, fetch_data).start()
+    # Schedule the next fetch in 10 seconds
+    logging.info("Scheduling the next data fetch in 10 seconds.")
+    Timer(10, fetch_data).start()
 
 def fetch_solar_generation():
     global last_working_ip
