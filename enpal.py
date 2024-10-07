@@ -82,15 +82,15 @@ def fetch_data():
         logging.info("Within time range, fetching data...")
         # Fetch solar generation data
         cached_solar_generation = fetch_solar_generation()
-        logging.info(f"Cached Solar Generation Data: {cached_solar_generation}")
+        logging.debug(f"Cached Solar Generation Data: {cached_solar_generation}")
 
         # Fetch grid power data
         cached_grid_power = fetch_grid_power()
-        logging.info(f"Cached Grid Power Data: {cached_grid_power}")
+        logging.debug(f"Cached Grid Power Data: {cached_grid_power}")
 
         # Fetch battery data
         cached_battery_data = fetch_battery_data()
-        logging.info(f"Cached Battery Data: {cached_battery_data}")
+        logging.debug(f"Cached Battery Data: {cached_battery_data}")
 
         # Check if all data fetches were successful
         if cached_solar_generation and cached_grid_power and cached_battery_data:
@@ -109,6 +109,8 @@ def fetch_data():
         logging.info("Outside specified time range. Cached data set to 0.")
         data_fetch_successful = True  # Consider it successful since it's outside the time range
 
+    # Log that the next fetch is scheduled
+    logging.info("Scheduling the next data fetch in 60 seconds.")
     # Schedule the next fetch in 60 seconds
     Timer(60, fetch_data).start()
 
@@ -235,7 +237,7 @@ def fetch_battery_data():
 @app.route('/solar_generation', methods=['GET'])
 def get_solar_generation():
     if cached_solar_generation:
-        logging.info(f"Returning solar generation data: {cached_solar_generation}")
+        logging.debug(f"Returning solar generation data: {cached_solar_generation}")
         return jsonify(cached_solar_generation), 200
     else:
         logging.error("Failed to fetch solar generation data")
@@ -244,7 +246,7 @@ def get_solar_generation():
 @app.route('/grid_power', methods=['GET'])
 def get_grid_power():
     if cached_grid_power:
-        logging.info(f"Returning grid power data: {cached_grid_power}")
+        logging.debug(f"Returning grid power data: {cached_grid_power}")
         return jsonify(cached_grid_power), 200
     else:
         logging.error("Failed to fetch grid power data")
@@ -253,7 +255,7 @@ def get_grid_power():
 @app.route('/battery_data', methods=['GET'])
 def get_battery_data():
     if cached_battery_data:
-        logging.info(f"Returning battery data: {cached_battery_data}")
+        logging.debug(f"Returning battery data: {cached_battery_data}")
         return jsonify(cached_battery_data), 200
     else:
         logging.error("Failed to fetch battery data")
@@ -262,11 +264,13 @@ def get_battery_data():
 @app.route('/health', methods=['GET'])
 def health_check():
     if data_fetch_successful:
+        logging.info("Health check passed")
         return jsonify({"status": "healthy"}), 200
     else:
+        logging.error("Health check failed")
         return jsonify({"status": "unhealthy"}), 500
 
 if __name__ == "__main__":
     logging.info("Script started")
     fetch_data()  # Start the initial data fetch
-    app.run(host=HTTP_HOST, port=HTTP_PORT, debug=True)
+    app.run(host=HTTP_HOST, port=HTTP_PORT, debug=False)  # Set debug to False
