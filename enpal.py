@@ -49,6 +49,9 @@ data_fetch_successful = False
 # Global variable to store the last known working IP
 last_working_ip = None
 
+# Global variable to track if no working IP was found
+no_working_ip_found = False
+
 def get_influx_api():
     """Get the next INFLUX_API URL from the cycle of IP addresses."""
     global last_working_ip
@@ -90,7 +93,9 @@ def is_within_time_range():
 
 def verify_working_ip():
     """Verify the last known working IP or find a new one."""
-    global last_working_ip
+    global last_working_ip, no_working_ip_found
+    no_working_ip_found = False  # Reset the flag at the start of each verification
+
     query = f"""
     {{
       "type": "flux",
@@ -132,6 +137,7 @@ def verify_working_ip():
             logging.error(f"Verification request failed: {e}")
 
     logging.error("No working IP found.")
+    no_working_ip_found = True  # Set the flag if no IP is found
     return False
 
 def fetch_data():
@@ -359,14 +365,26 @@ def get_battery_data():
 
 @app.route('/health', methods=['GET'])
 def health_check():
-    if data_fetch_successful:
+    if no_working_ip_found:
+        logging.error("Health check failed: No working IP found, Enpal box seems down.")
+        return jsonify({"status": "unhealthy", "reason": "No working IP found, Enpal box seems down."}), 500
+    elif data_fetch_successful:
         logging.info("Health check passed")
         return jsonify({"status": "healthy"}), 200
     else:
         logging.error("Health check failed")
         return jsonify({"status": "unhealthy"}), 500
 
+def retry_ip_verification():
+    """Retry IP verification every hour if no working IP is found."""
+    if no_working_ip_found:
+        logging.info("Retrying IP verification after an hour...")
+        verify_working_ip()
+    # Schedule the next retry in 1 hour (3600 seconds)
+    Timer(3600, retry_ip_verification).start()
+
 if __name__ == "__main__":
     logging.info("Script started")
     fetch_data()  # Start the initial data fetch
+    retry_ip_verification()  # Start the retry mechanism
     app.run(host=HTTP_HOST, port=HTTP_PORT, debug=False)  # Set debug to False

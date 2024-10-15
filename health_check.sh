@@ -4,6 +4,8 @@ HEALTH_URL="http://localhost:5000/health"
 EMAIL="recipient@example.com"
 RETRY_COUNT=5
 SLEEP_INTERVAL=60
+ENPAL_LINK_DIR="./enpal-link"
+DOCKER_COMPOSE_FILE="$ENPAL_LINK_DIR/docker-compose.yaml"
 
 log() {
     echo "$(date) - $1"
@@ -13,6 +15,17 @@ send_email() {
     local subject="$1"
     local message="$2"
     echo -e "Subject: $subject\n\n$message" | msmtp $EMAIL
+}
+
+restart_server() {
+    if [ -d "$ENPAL_LINK_DIR" ] && [ -f "$DOCKER_COMPOSE_FILE" ]; then
+        log "Restarting server using Docker Compose..."
+        (cd "$ENPAL_LINK_DIR" && docker-compose down && docker-compose up -d)
+        log "Server restart command executed."
+    else
+        log "Docker Compose file not found in $ENPAL_LINK_DIR. Cannot restart server."
+        send_email "Server Restart Failed" "Docker Compose file not found in $ENPAL_LINK_DIR. Cannot restart server."
+    fi
 }
 
 check_health() {
@@ -30,6 +43,7 @@ check_health() {
     done
     log "Server is down after $RETRY_COUNT attempts"
     send_email "Server Down Alert" "Server is down after $RETRY_COUNT attempts"
+    restart_server
     return 1
 }
 
