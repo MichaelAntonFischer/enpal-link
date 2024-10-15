@@ -37,6 +37,14 @@ chmod +x ./start_enpal.sh
 nano ./start_enpal.sh
 ```
 
+UPDATE:
+From version 1.0.4, you really only need the ./start_enpal.sh script on the first run to create the .env file, but if you are familiar with docker, you can directly create the .env file in the enpal-link directory. From then on, you can use msmtp and one of your own email addresses to send yourself status updates on the container, the shell script will automatically restart docker-compose in case of an error, if added to the sudo crontab, as per below.
+
+```bash
+cp ./enpal-link/health_check.sh ./health_check.sh
+nano ./health_check.sh
+```
+
 #### Add the following environment variables to the script:
 
 INFLUX_HOST="YOUR_INFLUX_HOST" (You can get this info from Enpal customer service)<br />
