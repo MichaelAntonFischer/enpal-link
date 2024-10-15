@@ -107,7 +107,7 @@ Ensure the JSON response from the Flask endpoint matches the expected format.
 If the script says "Organisation not found" or something like this, Enpal might have given you the ClientID instead of OrgID. You can find the correct ID in the InfluxDB.
 
 IMPORTANT:
-At the time of this writing the enpal box reboots during the night and doesn't react kindly to requests during boot. It is recommended to shutdown the virtual meters from 11p.m. to 5a.m.
+At the time of this writing the enpal box reboots during the night and doesn't react kindly to requests during boot. It is recommended to shutdown the virtual meters from 10p.m. to 5a.m.
 
 UPADTE: Since version 1.0.1 you can also set these times via command line parameters. This has the additional advantage that all values are a defined zero and not the last read value on the wallbox side.
 
@@ -119,8 +119,16 @@ Add the following lines:
 0 5 * * * cd /home/[USER_NAME]/enpal-link && /usr/local/bin/docker-compose up -d >>>
 0 22 * * * cd /home/[USER_NAME]/enpal-link && /usr/local/bin/docker-compose down >>>
 ```
+UPDATE:
+From version 1.0.4 you can use health_check.sh for restarts, comment out the old crontab and add this line to the sudo crontab.
+```bash
+sudo crontab -e
+```
+```bash
+0 6-21 * * * /usr/bin/env TZ=Europe/Berlin /home/[USER_NAME]/health_check.sh >> /home/[USER_NAME]/health_check.log 2>&1
+```
 
-Replace [USER_NAME] with your username. If you didn't clone the repo to home dir, please adjust the full path. Same for docker-compose.
+Replace [USER_NAME] with your username. If you didn't clone the repo to home dir, please adjust the full path. Same for docker-compose and timezone.
 
 
 ## License
