@@ -24,5 +24,8 @@ ENV HTTP_PORT="5000"
 ENV BATTERY_STATE_OF_CHARGE_THRESHOLD="50"
 ENV BATTERY_WATT_ADDER="2000"
 
+# Set the timezone to Berlin CET
+RUN ln -snf /usr/share/zoneinfo/Europe/Berlin /etc/localtime && echo "Europe/Berlin" > /etc/timezone
+
 # Run app.py when the container launches
 CMD ["python", "./enpal.py"]

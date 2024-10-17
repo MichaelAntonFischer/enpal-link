@@ -52,6 +52,11 @@ last_working_ip = None
 # Global variable to track if no working IP was found
 no_working_ip_found = False
 
+# Global variables to store the last 10 values for each data type
+solar_generation_history = []
+grid_power_history = []
+battery_data_history = []
+
 def get_influx_api():
     """Get the next INFLUX_API URL from the cycle of IP addresses."""
     global last_working_ip
@@ -140,6 +145,12 @@ def verify_working_ip():
     no_working_ip_found = True  # Set the flag if no IP is found
     return False
 
+def update_history(history_list, new_value):
+    """Update the history list with the new value, maintaining a maximum of 10 entries."""
+    if len(history_list) >= 10:
+        history_list.pop(0)
+    history_list.append(new_value)
+
 def fetch_data():
     global cached_solar_generation, cached_grid_power, cached_battery_data, data_fetch_successful
 
@@ -153,14 +164,17 @@ def fetch_data():
         logging.info("Within time range, fetching data...")
         # Fetch solar generation data
         cached_solar_generation = fetch_solar_generation()
+        update_history(solar_generation_history, cached_solar_generation)
         logging.debug(f"Cached Solar Generation Data: {cached_solar_generation}")
 
         # Fetch grid power data
         cached_grid_power = fetch_grid_power()
+        update_history(grid_power_history, cached_grid_power)
         logging.debug(f"Cached Grid Power Data: {cached_grid_power}")
 
         # Fetch battery data
         cached_battery_data = fetch_battery_data()
+        update_history(battery_data_history, cached_battery_data)
         logging.debug(f"Cached Battery Data: {cached_battery_data}")
 
         # Check if all data fetches were successful
@@ -336,6 +350,10 @@ def fetch_battery_data():
 
     return None
 
+def check_stuck_values(history_list):
+    """Check if the last 10 values in the history list are the same."""
+    return len(set(tuple(d.items()) for d in history_list)) == 1
+
 @app.route('/solar_generation', methods=['GET'])
 def get_solar_generation():
     if cached_solar_generation:
@@ -370,7 +388,27 @@ def health_check():
         return jsonify({"status": "unhealthy", "reason": "No working IP found, Enpal box seems down."}), 500
     elif data_fetch_successful:
         logging.info("Health check passed")
-        return jsonify({"status": "healthy"}), 200
+        # Check if all three data sets are stuck
+        solar_stuck = check_stuck_values(solar_generation_history)
+        grid_stuck = check_stuck_values(grid_power_history)
+        battery_stuck = check_stuck_values(battery_data_history)
+
+        if solar_stuck and grid_stuck and battery_stuck:
+            logging.warning("Stuck values detected in all data sets.")
+            return jsonify({
+                "status": "warning",
+                "message": "Stuck values detected in all data sets",
+                "solar_generation": cached_solar_generation,
+                "grid_power": cached_grid_power,
+                "battery_data": cached_battery_data
+            }), 208  # Using 208 to indicate a warning state
+        else:
+            return jsonify({
+                "status": "healthy",
+                "solar_generation": cached_solar_generation,
+                "grid_power": cached_grid_power,
+                "battery_data": cached_battery_data
+            }), 200
     else:
         logging.error("Health check failed")
         return jsonify({"status": "unhealthy"}), 500

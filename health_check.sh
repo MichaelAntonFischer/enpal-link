@@ -37,6 +37,10 @@ check_health() {
         if [ "$response" -eq 200 ]; then
             log "Server is healthy"
             return 0
+        elif [ "$response" -eq 208 ]; then
+            log "Warning: Stuck values detected in all data sets"
+            send_email "Stuck Values Alert" "Stuck values detected in all data sets."
+            return 0
         fi
         log "Server not healthy, sleeping for $SLEEP_INTERVAL seconds"
         sleep $SLEEP_INTERVAL
