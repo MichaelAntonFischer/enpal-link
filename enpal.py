@@ -387,7 +387,9 @@ def health_check():
         logging.error("Health check failed: No working IP found, Enpal box seems down.")
         return jsonify({"status": "unhealthy", "reason": "No working IP found, Enpal box seems down."}), 500
     elif data_fetch_successful:
-        logging.info("Health check passed")
+        # Log the latest values for each dataset in a single line
+        logging.info(f"Latest Values - S: {cached_solar_generation}, G: {cached_grid_power}, B: {cached_battery_data}")
+
         # Check if all three data sets are stuck
         solar_stuck = check_stuck_values(solar_generation_history)
         grid_stuck = check_stuck_values(grid_power_history)
