@@ -61,6 +61,9 @@ fetch_timestamps = []
 # Global variable to track the initialization phase
 initialization_phase = True
 
+# Global variable to track the number of data fetches
+fetch_count = 0
+
 def get_influx_api():
     """Get the next INFLUX_API URL from the cycle of IP addresses."""
     global last_working_ip
