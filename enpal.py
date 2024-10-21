@@ -58,6 +58,9 @@ grid_power_history = []
 battery_data_history = []
 fetch_timestamps = []
 
+# Global variable to track the initialization phase
+initialization_phase = True
+
 def get_influx_api():
     """Get the next INFLUX_API URL from the cycle of IP addresses."""
     global last_working_ip
@@ -153,7 +156,7 @@ def update_history(history_list, new_value):
     history_list.append(new_value)
 
 def fetch_data():
-    global cached_solar_generation, cached_grid_power, cached_battery_data, data_fetch_successful
+    global cached_solar_generation, cached_grid_power, cached_battery_data, data_fetch_successful, fetch_count, initialization_phase
 
     if not is_within_time_range():
         logging.info("Outside specified time range. Skipping data fetch.")
@@ -185,6 +188,13 @@ def fetch_data():
     fetch_timestamps.append(datetime.now())
     if len(fetch_timestamps) > 10:
         fetch_timestamps.pop(0)
+
+    # Increment the fetch count
+    fetch_count += 1
+
+    # Exit initialization phase after 10 fetches
+    if fetch_count >= 10:
+        initialization_phase = False
 
     # Check if all data fetches were successful
     if cached_solar_generation and cached_grid_power and cached_battery_data:
@@ -395,8 +405,8 @@ def health_check():
         # Log the latest values for each dataset in a single line
         logging.info(f"Latest Values - S: {cached_solar_generation}, G: {cached_grid_power}, B: {cached_battery_data}")
 
-        # Check if all three data sets are stuck and timestamps are recent
-        if check_recent_timestamps():
+        # Only check for stuck values if not in initialization phase
+        if not initialization_phase and check_recent_timestamps():
             solar_stuck = check_stuck_values(solar_generation_history)
             grid_stuck = check_stuck_values(grid_power_history)
             battery_stuck = check_stuck_values(battery_data_history)
