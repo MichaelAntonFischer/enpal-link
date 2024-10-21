@@ -7,7 +7,7 @@ import logging
 from flask import Flask, jsonify
 from dotenv import load_dotenv
 from threading import Timer
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from itertools import cycle
 
@@ -52,10 +52,11 @@ last_working_ip = None
 # Global variable to track if no working IP was found
 no_working_ip_found = False
 
-# Global variables to store the last 10 values for each data type
+# Global variables to store the last 10 values and their timestamps
 solar_generation_history = []
 grid_power_history = []
 battery_data_history = []
+fetch_timestamps = []
 
 def get_influx_api():
     """Get the next INFLUX_API URL from the cycle of IP addresses."""
@@ -154,45 +155,43 @@ def update_history(history_list, new_value):
 def fetch_data():
     global cached_solar_generation, cached_grid_power, cached_battery_data, data_fetch_successful
 
+    if not is_within_time_range():
+        logging.info("Outside specified time range. Skipping data fetch.")
+        return
+
     if not verify_working_ip():
         logging.error("Data fetch aborted due to no working IP.")
         return
 
     data_fetch_successful = False  # Reset the flag at the start of each fetch
 
-    if is_within_time_range():
-        logging.info("Within time range, fetching data...")
-        # Fetch solar generation data
-        cached_solar_generation = fetch_solar_generation()
-        update_history(solar_generation_history, cached_solar_generation)
-        logging.debug(f"Cached Solar Generation Data: {cached_solar_generation}")
+    logging.info("Within time range, fetching data...")
+    # Fetch solar generation data
+    cached_solar_generation = fetch_solar_generation()
+    update_history(solar_generation_history, cached_solar_generation)
+    logging.debug(f"Cached Solar Generation Data: {cached_solar_generation}")
 
-        # Fetch grid power data
-        cached_grid_power = fetch_grid_power()
-        update_history(grid_power_history, cached_grid_power)
-        logging.debug(f"Cached Grid Power Data: {cached_grid_power}")
+    # Fetch grid power data
+    cached_grid_power = fetch_grid_power()
+    update_history(grid_power_history, cached_grid_power)
+    logging.debug(f"Cached Grid Power Data: {cached_grid_power}")
 
-        # Fetch battery data
-        cached_battery_data = fetch_battery_data()
-        update_history(battery_data_history, cached_battery_data)
-        logging.debug(f"Cached Battery Data: {cached_battery_data}")
+    # Fetch battery data
+    cached_battery_data = fetch_battery_data()
+    update_history(battery_data_history, cached_battery_data)
+    logging.debug(f"Cached Battery Data: {cached_battery_data}")
 
-        # Check if all data fetches were successful
-        if cached_solar_generation and cached_grid_power and cached_battery_data:
-            data_fetch_successful = True
-            logging.info("Data fetch successful.")
-        else:
-            logging.error("Data fetch failed for one or more components.")
+    # Record the timestamp of this fetch
+    fetch_timestamps.append(datetime.now())
+    if len(fetch_timestamps) > 10:
+        fetch_timestamps.pop(0)
+
+    # Check if all data fetches were successful
+    if cached_solar_generation and cached_grid_power and cached_battery_data:
+        data_fetch_successful = True
+        logging.info("Data fetch successful.")
     else:
-        # Set cached data to 0 when outside the specified time range
-        cached_solar_generation = {"solar_power_generation": 0}
-        cached_grid_power = {"grid_power": 0}
-        cached_battery_data = {
-            "battery_charge_discharge": 0,
-            "battery_charge_level": 0
-        }
-        logging.info("Outside specified time range. Cached data set to 0.")
-        data_fetch_successful = True  # Consider it successful since it's outside the time range
+        logging.error("Data fetch failed for one or more components.")
 
     # Schedule the next fetch in 10 seconds
     logging.info("Scheduling the next data fetch in 10 seconds.")
@@ -354,6 +353,12 @@ def check_stuck_values(history_list):
     """Check if the last 10 values in the history list are the same."""
     return len(set(tuple(d.items()) for d in history_list)) == 1
 
+def check_recent_timestamps():
+    """Check if the timestamps of the last 10 fetches are within the last 2 hours."""
+    if len(fetch_timestamps) < 10:
+        return False
+    return all(datetime.now() - ts < timedelta(hours=2) for ts in fetch_timestamps)
+
 @app.route('/solar_generation', methods=['GET'])
 def get_solar_generation():
     if cached_solar_generation:
@@ -390,27 +395,28 @@ def health_check():
         # Log the latest values for each dataset in a single line
         logging.info(f"Latest Values - S: {cached_solar_generation}, G: {cached_grid_power}, B: {cached_battery_data}")
 
-        # Check if all three data sets are stuck
-        solar_stuck = check_stuck_values(solar_generation_history)
-        grid_stuck = check_stuck_values(grid_power_history)
-        battery_stuck = check_stuck_values(battery_data_history)
+        # Check if all three data sets are stuck and timestamps are recent
+        if check_recent_timestamps():
+            solar_stuck = check_stuck_values(solar_generation_history)
+            grid_stuck = check_stuck_values(grid_power_history)
+            battery_stuck = check_stuck_values(battery_data_history)
 
-        if solar_stuck and grid_stuck and battery_stuck:
-            logging.warning("Stuck values detected in all data sets.")
-            return jsonify({
-                "status": "warning",
-                "message": "Stuck values detected in all data sets",
-                "solar_generation": cached_solar_generation,
-                "grid_power": cached_grid_power,
-                "battery_data": cached_battery_data
-            }), 208  # Using 208 to indicate a warning state
-        else:
-            return jsonify({
-                "status": "healthy",
-                "solar_generation": cached_solar_generation,
-                "grid_power": cached_grid_power,
-                "battery_data": cached_battery_data
-            }), 200
+            if solar_stuck and grid_stuck and battery_stuck:
+                logging.warning("Stuck values detected in all data sets.")
+                return jsonify({
+                    "status": "warning",
+                    "message": "Stuck values detected in all data sets",
+                    "solar_generation": cached_solar_generation,
+                    "grid_power": cached_grid_power,
+                    "battery_data": cached_battery_data
+                }), 208  # Using 208 to indicate a warning state
+
+        return jsonify({
+            "status": "healthy",
+            "solar_generation": cached_solar_generation,
+            "grid_power": cached_grid_power,
+            "battery_data": cached_battery_data
+        }), 200
     else:
         logging.error("Health check failed")
         return jsonify({"status": "unhealthy"}), 500
