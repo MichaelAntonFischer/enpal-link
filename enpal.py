@@ -402,8 +402,12 @@ def health_check():
         logging.error("Health check failed: No working IP found, Enpal box seems down.")
         return jsonify({"status": "unhealthy", "reason": "No working IP found, Enpal box seems down."}), 500
     elif data_fetch_successful:
-        # Log the latest values for each dataset in a single line
-        logging.info(f"Latest Values - S: {cached_solar_generation}, G: {cached_grid_power}, B: {cached_battery_data}")
+        # Log the latest values for each dataset in a single line during initialization phase
+        solar_value = cached_solar_generation.get('solar_power_generation', 'N/A')
+        grid_value = cached_grid_power.get('grid_power', 'N/A')
+        battery_discharge = cached_battery_data.get('battery_charge_discharge', 'N/A')
+        battery_level = cached_battery_data.get('battery_charge_level', 'N/A')
+        logging.info(f"Latest Values - S: {solar_value}, G: {grid_value}, B: {battery_discharge}, BL: {battery_level}")
 
         # Only check for stuck values if not in initialization phase
         if not initialization_phase and check_recent_timestamps():
@@ -418,14 +422,16 @@ def health_check():
                     "message": "Stuck values detected in all data sets",
                     "solar_generation": cached_solar_generation,
                     "grid_power": cached_grid_power,
-                    "battery_data": cached_battery_data
+                    "battery_data": cached_battery_data,
+                    "initialization_phase": initialization_phase
                 }), 208  # Using 208 to indicate a warning state
 
         return jsonify({
             "status": "healthy",
             "solar_generation": cached_solar_generation,
             "grid_power": cached_grid_power,
-            "battery_data": cached_battery_data
+            "battery_data": cached_battery_data,
+            "initialization_phase": initialization_phase
         }), 200
     else:
         logging.error("Health check failed")
@@ -438,6 +444,12 @@ def retry_ip_verification():
         verify_working_ip()
     # Schedule the next retry in 1 hour (3600 seconds)
     Timer(3600, retry_ip_verification).start()
+
+# Adjust logging configuration to suppress non-error messages after init phase
+if initialization_phase:
+    logging.getLogger().setLevel(logging.INFO)
+else:
+    logging.getLogger().setLevel(logging.WARNING)
 
 if __name__ == "__main__":
     logging.info("Script started")
