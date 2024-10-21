@@ -156,6 +156,9 @@ def update_history(history_list, new_value):
 def fetch_data():
     global cached_solar_generation, cached_grid_power, cached_battery_data, data_fetch_successful, fetch_count, initialization_phase
 
+    if initialization_phase:
+        logging.info("Application is in the initialization phase.")
+
     if not is_within_time_range():
         logging.info("Outside specified time range. Skipping data fetch.")
         return
@@ -192,6 +195,8 @@ def fetch_data():
 
     # Exit initialization phase after 10 fetches
     if fetch_count >= 10:
+        if initialization_phase:
+            logging.info("Exiting initialization phase.")
         initialization_phase = False
 
     # Check if all data fetches were successful
