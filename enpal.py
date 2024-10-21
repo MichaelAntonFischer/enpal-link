@@ -193,11 +193,13 @@ def fetch_data():
     # Increment the fetch count
     fetch_count += 1
 
-    # Exit initialization phase after 10 fetches
-    if fetch_count >= 10:
-        if initialization_phase:
-            logging.info("Exiting initialization phase.")
+    # Check if we need to exit the initialization phase
+    if fetch_count >= 10 and initialization_phase:
+        logging.info("Exiting initialization phase.")
         initialization_phase = False
+        # Only change to WARNING if not in DEBUG mode
+        if logging.getLogger().getEffectiveLevel() != logging.DEBUG:
+            logging.getLogger().setLevel(logging.WARNING)
 
     # Check if all data fetches were successful
     if cached_solar_generation and cached_grid_power and cached_battery_data:
@@ -445,12 +447,6 @@ def retry_ip_verification():
         verify_working_ip()
     # Schedule the next retry in 1 hour (3600 seconds)
     Timer(3600, retry_ip_verification).start()
-
-if logging.getLogger().getEffectiveLevel() != logging.DEBUG:
-    if initialization_phase:
-        logging.getLogger().setLevel(logging.INFO)
-    else:
-        logging.getLogger().setLevel(logging.WARNING)
 
 if __name__ == "__main__":
     logging.info("Script started")
