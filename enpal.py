@@ -87,6 +87,10 @@ logging.info(f"TIMEZONE: {TIMEZONE}")
 
 app = Flask(__name__)
 
+# Set the werkzeug logger level to WARNING
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.WARNING)
+
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
