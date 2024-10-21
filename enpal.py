@@ -90,11 +90,6 @@ app = Flask(__name__)
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
-# Adjust Flask's logger to only show HTTP requests in debug mode
-if not app.debug:
-    log = logging.getLogger('werkzeug')
-    log.setLevel(logging.WARNING)  # Set to WARNING to suppress HTTP request logs
-
 def is_within_time_range():
     """Check if the current time is within the specified start and end time in the given timezone."""
     tz = pytz.timezone(TIMEZONE)
@@ -409,7 +404,8 @@ def health_check():
         grid_value = cached_grid_power.get('grid_power', 'N/A')
         battery_discharge = cached_battery_data.get('battery_charge_discharge', 'N/A')
         battery_level = cached_battery_data.get('battery_charge_level', 'N/A')
-        logging.WARNING(f"Latest Values - S: {solar_value}, G: {grid_value}, B: {battery_discharge}, BL: {battery_level}")
+        
+        logging.warning(f"Latest Values - S: {solar_value}, G: {grid_value}, B: {battery_discharge}, BL: {battery_level}")
 
         # Only check for stuck values if not in initialization phase
         if not initialization_phase and check_recent_timestamps():
@@ -447,11 +443,11 @@ def retry_ip_verification():
     # Schedule the next retry in 1 hour (3600 seconds)
     Timer(3600, retry_ip_verification).start()
 
-# Adjust logging configuration to suppress non-error messages after init phase
-if initialization_phase:
-    logging.getLogger().setLevel(logging.INFO)
-else:
-    logging.getLogger().setLevel(logging.WARNING)
+if logging.getLogger().getEffectiveLevel() != logging.DEBUG:
+    if initialization_phase:
+        logging.getLogger().setLevel(logging.INFO)
+    else:
+        logging.getLogger().setLevel(logging.WARNING)
 
 if __name__ == "__main__":
     logging.info("Script started")
