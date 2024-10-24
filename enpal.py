@@ -152,10 +152,11 @@ def verify_working_ip():
     return False
 
 def update_history(history_list, new_value):
-    """Update the history list with the new value, maintaining a maximum of 10 entries."""
+    """Update the history list with the new value and current timestamp, maintaining a maximum of 10 entries."""
+    current_time = datetime.now()
     if len(history_list) >= 10:
         history_list.pop(0)
-    history_list.append(new_value)
+    history_list.append((current_time, new_value))
 
 def fetch_data():
     global cached_solar_generation, cached_grid_power, cached_battery_data, data_fetch_successful, fetch_count, initialization_phase
@@ -369,8 +370,35 @@ def fetch_battery_data():
     return None
 
 def check_stuck_values(history_list):
-    """Check if the last 10 values in the history list are the same."""
-    return len(set(tuple(d.items()) for d in history_list)) == 1
+    """Check if the data is stuck based on timestamps and value consistency."""
+    if len(history_list) < 10:
+        logging.warning("Not enough data to determine if values are stuck.")
+        return False
+    
+    # Log the history list for debugging
+    logging.debug(f"History list for stuck check: {history_list}")
+    
+    # Extract timestamps and values separately
+    timestamps = [entry[0] for entry in history_list]
+    values = [entry[1] for entry in history_list]
+    
+    # Get the current time
+    current_time = datetime.now()
+    
+    # Check if all timestamps are older than 10 hours
+    if all(current_time - ts > timedelta(hours=10) for ts in timestamps):
+        logging.warning("All timestamps are older than 10 hours. Data is stuck.")
+        return True
+    
+    # Check if all timestamps are within the last 2 hours
+    if all(current_time - ts <= timedelta(hours=2) for ts in timestamps):
+        # Check if all values are the same
+        if len(set(values)) == 1:
+            logging.warning("Detected stuck values in the history list.")
+            return True
+    
+    logging.info("Values and timestamps are not stuck.")
+    return False
 
 def check_recent_timestamps():
     """Check if the timestamps of the last 10 fetches are within the last 2 hours."""
