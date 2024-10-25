@@ -378,24 +378,31 @@ def check_stuck_values(history_list):
     # Log the history list for debugging
     logging.debug(f"History list for stuck check: {history_list}")
     
-    # Extract timestamps and values separately
+    if 'solar_power_generation' in history_list[0][1]:
+        key = 'solar_power_generation'
+    elif 'grid_power' in history_list[0][1]:
+        key = 'grid_power'
+    elif 'battery_charge_level' in history_list[0][1]:
+        key = 'battery_charge_level'
+    else:
+        logging.error("Unknown data format in history list")
+        return False
+    
     timestamps = [entry[0] for entry in history_list]
-    values = [entry[1] for entry in history_list]
+    values = [entry[1][key] for entry in history_list]
     
     # Get the current time
     current_time = datetime.now()
     
-    # Check if all timestamps are older than 10 hours
-    if all(current_time - ts > timedelta(hours=10) for ts in timestamps):
-        logging.warning("All timestamps are older than 10 hours. Data is stuck.")
+    # Check if all timestamps are older than 2 hours
+    if all(current_time - ts > timedelta(hours=2) for ts in timestamps):
+        logging.warning("All timestamps are older than 2 hours. Data is stuck.")
         return True
     
-    # Check if all timestamps are within the last 2 hours
-    if all(current_time - ts <= timedelta(hours=2) for ts in timestamps):
-        # Check if all values are the same
-        if len(set(values)) == 1:
-            logging.warning("Detected stuck values in the history list.")
-            return True
+    # Check if all values are the same (regardless of timestamp)
+    if len(set(values)) == 1:
+        logging.warning("Detected stuck values in the history list.")
+        return True
     
     logging.info("Values and timestamps are not stuck.")
     return False
