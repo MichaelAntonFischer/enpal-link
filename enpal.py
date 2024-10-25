@@ -452,12 +452,27 @@ def health_check():
         logging.warning(f"Latest Values - S: {solar_value}, G: {grid_value}, B: {battery_level}")
 
         # Only check for stuck values if not in initialization phase
-        if not initialization_phase and check_recent_timestamps():
-            solar_stuck = check_stuck_values(solar_generation_history)
-            grid_stuck = check_stuck_values(grid_power_history)
-            battery_stuck = check_stuck_values(battery_data_history)
+        if not initialization_phase:
+            # First check if timestamps are recent enough
+            if not check_recent_timestamps():
+                logging.warning("Data timestamps are too old.")
+                return jsonify({
+                    "status": "warning",
+                    "message": "Data timestamps are too old",
+                    "solar_generation": cached_solar_generation,
+                    "grid_power": cached_grid_power,
+                    "battery_data": cached_battery_data,
+                    "initialization_phase": initialization_phase
+                }), 208
 
-            if solar_stuck and grid_stuck and battery_stuck:
+            # Then check if all three datasets show the same values
+            solar_values = [entry[1]['solar_power_generation'] for entry in solar_generation_history[-10:]]
+            grid_values = [entry[1]['grid_power'] for entry in grid_power_history[-10:]]
+            battery_values = [entry[1]['battery_charge_level'] for entry in battery_data_history[-10:]]
+
+            if (len(set(solar_values)) == 1 and 
+                len(set(grid_values)) == 1 and 
+                len(set(battery_values)) == 1):
                 logging.warning("Stuck values detected in all data sets.")
                 return jsonify({
                     "status": "warning",
@@ -466,7 +481,7 @@ def health_check():
                     "grid_power": cached_grid_power,
                     "battery_data": cached_battery_data,
                     "initialization_phase": initialization_phase
-                }), 208  # Using 208 to indicate a warning state
+                }), 208
 
         return jsonify({
             "status": "healthy",

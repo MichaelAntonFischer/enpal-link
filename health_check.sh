@@ -41,7 +41,7 @@ check_health() {
             log "Warning: Stuck values detected in all data sets"
             send_email "Stuck Values Alert" "Stuck values detected in all data sets."
             restart_server
-            return 0
+            return 1
         fi
         log "Server not healthy, sleeping for $SLEEP_INTERVAL seconds"
         sleep $SLEEP_INTERVAL
