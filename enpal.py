@@ -176,22 +176,24 @@ def get_delay_until_start():
 
 def fetch_data():
     global cached_solar_generation, cached_grid_power, cached_battery_data, data_fetch_successful, fetch_count, initialization_phase
-
-    if initialization_phase:
-        logging.info("Application is in the initialization phase.")
-
+    
+    # Check time range first and return immediately if outside
     if not is_within_time_range():
         logging.warning("Outside specified time range. Scheduling next fetch at start time.")
         delay = get_delay_until_start()
         Timer(delay, fetch_data).start()
-        return
+        return  
+    
+    if initialization_phase:
+        logging.info("Application is in the initialization phase.")
 
     if not verify_working_ip():
         logging.error("Data fetch aborted due to no working IP.")
+        Timer(10, fetch_data).start()  
         return
 
-    data_fetch_successful = False  # Reset the flag at the start of each fetch
-
+    data_fetch_successful = False 
+    
     logging.info("Within time range, fetching data...")
     # Fetch solar generation data
     cached_solar_generation = fetch_solar_generation()
