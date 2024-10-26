@@ -32,14 +32,19 @@ check_health() {
     log "Starting health check..."
     for ((i=1; i<=RETRY_COUNT; i++)); do
         log "Attempt $i: Checking health at $HEALTH_URL"
-        response=$(curl -s -o /dev/null -w "%{http_code}" $HEALTH_URL)
-        log "Response code: $response"
-        if [ "$response" -eq 200 ]; then
+        # Capture both status code and response body
+        response_body=$(curl -s $HEALTH_URL)
+        response_code=$(curl -s -o /dev/null -w "%{http_code}" $HEALTH_URL)
+        log "Response code: $response_code"
+        log "Response body: $response_body"
+        
+        if [ "$response_code" -eq 200 ]; then
             log "Server is healthy"
             return 0
-        elif [ "$response" -eq 208 ]; then
-            log "Warning: Stuck values detected in all data sets"
-            send_email "Stuck Values Alert" "Stuck values detected in all data sets."
+        elif [ "$response_code" -eq 208 ]; then
+            message=$(echo $response_body | grep -o '"message":"[^"]*"' | cut -d'"' -f4)
+            log "Warning: $message"
+            send_email "Stuck Values Alert" "$message\n\nFull response:\n$response_body"
             restart_server
             return 1
         fi
@@ -47,7 +52,7 @@ check_health() {
         sleep $SLEEP_INTERVAL
     done
     log "Server is down after $RETRY_COUNT attempts"
-    send_email "Server Down Alert" "Server is down after $RETRY_COUNT attempts"
+    send_email "Server Down Alert" "Server is down after $RETRY_COUNT attempts.\n\nLast response:\n$response_body"
     restart_server
     return 1
 }
