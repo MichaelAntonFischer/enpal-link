@@ -4,8 +4,8 @@ HEALTH_URL="http://localhost:5000/health"
 EMAIL="recipient@example.com"
 RETRY_COUNT=5
 SLEEP_INTERVAL=60
-ENPAL_LINK_DIR="./enpal-link"
-DOCKER_COMPOSE_FILE="$ENPAL_LINK_DIR/docker-compose.yaml"
+ENPAL_LINK_DIR="/home/user/enpal-link"
+DOCKER_COMPOSE_FILE="$ENPAL_LINK_DIR/docker-compose.yml"
 
 log() {
     echo "$(date) - $1"
