@@ -177,13 +177,22 @@ def get_delay_until_start():
 def fetch_data():
     global cached_solar_generation, cached_grid_power, cached_battery_data, data_fetch_successful, fetch_count, initialization_phase
     
-    # Check time range first and return immediately if outside
     if not is_within_time_range():
+        # Set all values to 0 during off-hours
+        cached_solar_generation = {"solar_power_generation": 0.0}
+        cached_grid_power = {"grid_power": 0.0}
+        cached_battery_data = {
+            "battery_charge_discharge": 0.0,
+            "battery_charge_level": 0.0
+        }
+        data_fetch_successful = True  # Set to true so health check returns 200
+        
+        # Schedule next fetch at start time
         logging.warning("Outside specified time range. Scheduling next fetch at start time.")
         delay = get_delay_until_start()
         Timer(delay, fetch_data).start()
-        return  
-    
+        return
+
     if initialization_phase:
         logging.info("Application is in the initialization phase.")
 
@@ -468,6 +477,20 @@ def get_battery_data():
 
 @app.route('/health', methods=['GET'])
 def health_check():
+    if not is_within_time_range():
+        # During off-hours, always return healthy with 0 values
+        return jsonify({
+            "status": "healthy",
+            "message": "System in standby (outside operating hours)",
+            "solar_generation": {"solar_power_generation": 0.0},
+            "grid_power": {"grid_power": 0.0},
+            "battery_data": {
+                "battery_charge_discharge": 0.0,
+                "battery_charge_level": 0.0
+            },
+            "initialization_phase": False
+        }), 200
+
     if no_working_ip_found:
         logging.error("Health check failed: No working IP found, Enpal box seems down.")
         return jsonify({"status": "unhealthy", "reason": "No working IP found, Enpal box seems down."}), 500
