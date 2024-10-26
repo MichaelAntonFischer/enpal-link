@@ -152,11 +152,27 @@ def verify_working_ip():
     return False
 
 def update_history(history_list, new_value):
-    """Update the history list with the new value and current timestamp, maintaining a maximum of 10 entries."""
+    """Update the history list with the new value and current timestamp."""
     current_time = datetime.now()
-    if len(history_list) >= 10:
+    if len(history_list) >= 60:  # Increased from 10 to 60
         history_list.pop(0)
     history_list.append((current_time, new_value))
+
+def get_delay_until_start():
+    """Calculate the delay in seconds until the next start time."""
+    tz = pytz.timezone(TIMEZONE)
+    now = datetime.now(tz)
+    start_time = datetime.strptime(START_TIME, "%H:%M").replace(
+        year=now.year, month=now.month, day=now.day, tzinfo=tz
+    )
+    
+    # If start time is earlier than current time, add one day
+    if start_time <= now:
+        start_time = start_time + timedelta(days=1)
+    
+    delay = (start_time - now).total_seconds()
+    logging.info(f"Calculated delay until next start: {delay} seconds")
+    return delay
 
 def fetch_data():
     global cached_solar_generation, cached_grid_power, cached_battery_data, data_fetch_successful, fetch_count, initialization_phase
@@ -165,7 +181,9 @@ def fetch_data():
         logging.info("Application is in the initialization phase.")
 
     if not is_within_time_range():
-        logging.info("Outside specified time range. Skipping data fetch.")
+        logging.warning("Outside specified time range. Scheduling next fetch at start time.")
+        delay = get_delay_until_start()
+        Timer(delay, fetch_data).start()
         return
 
     if not verify_working_ip():
@@ -187,7 +205,13 @@ def fetch_data():
 
     # Fetch battery data
     cached_battery_data = fetch_battery_data()
-    update_history(battery_data_history, cached_battery_data)
+    if cached_battery_data:
+        # Create a combined battery data dictionary with both power and level
+        battery_history_data = {
+            'battery_charge_level': cached_battery_data['battery_charge_level'],
+            'battery_power': cached_battery_data['battery_charge_discharge']
+        }
+        update_history(battery_data_history, battery_history_data)
     logging.debug(f"Cached Battery Data: {cached_battery_data}")
 
     # Record the timestamp of this fetch
@@ -449,13 +473,14 @@ def health_check():
         solar_value = cached_solar_generation.get('solar_power_generation', 'N/A')
         grid_value = cached_grid_power.get('grid_power', 'N/A')
         battery_level = cached_battery_data.get('battery_charge_level', 'N/A')
-        logging.warning(f"Latest Values - S: {solar_value}, G: {grid_value}, B: {battery_level}")
+        battery_power = cached_battery_data.get('battery_charge_discharge', 'N/A')
+        logging.warning(f"Latest Values - S: {solar_value}, G: {grid_value}, B_lvl: {battery_level}, B_pwr: {battery_power}")
 
         # Only check for stuck values if not in initialization phase
         if not initialization_phase:
             # First check if timestamps are recent enough
             if not check_recent_timestamps():
-                logging.warning("Data timestamps are too old.")
+                log_all_datasets("Data timestamps are too old")
                 return jsonify({
                     "status": "warning",
                     "message": "Data timestamps are too old",
@@ -465,15 +490,17 @@ def health_check():
                     "initialization_phase": initialization_phase
                 }), 208
 
-            # Then check if all three datasets show the same values
-            solar_values = [entry[1]['solar_power_generation'] for entry in solar_generation_history[-10:]]
-            grid_values = [entry[1]['grid_power'] for entry in grid_power_history[-10:]]
-            battery_values = [entry[1]['battery_charge_level'] for entry in battery_data_history[-10:]]
+            # Then check if all datasets show the same values
+            solar_values = [entry[1]['solar_power_generation'] for entry in solar_generation_history[-60:]]
+            grid_values = [entry[1]['grid_power'] for entry in grid_power_history[-60:]]
+            battery_level_values = [entry[1]['battery_charge_level'] for entry in battery_data_history[-60:]]
+            battery_power_values = [entry[1]['battery_power'] for entry in battery_data_history[-60:]]
 
             if (len(set(solar_values)) == 1 and 
                 len(set(grid_values)) == 1 and 
-                len(set(battery_values)) == 1):
-                logging.warning("Stuck values detected in all data sets.")
+                len(set(battery_level_values)) == 1 and
+                len(set(battery_power_values)) == 1):
+                log_all_datasets("Stuck values detected in all data sets")
                 return jsonify({
                     "status": "warning",
                     "message": "Stuck values detected in all data sets",
@@ -501,6 +528,20 @@ def retry_ip_verification():
         verify_working_ip()
     # Schedule the next retry in 1 hour (3600 seconds)
     Timer(3600, retry_ip_verification).start()
+
+def log_all_datasets(reason):
+    """Log all datasets when a warning condition is detected."""
+    logging.warning(f"Warning condition detected: {reason}")
+    logging.warning("Current data in memory:")
+    logging.warning(f"Solar Generation History (last 60):")
+    for ts, data in solar_generation_history[-60:]:
+        logging.warning(f"  {ts}: {data}")
+    logging.warning(f"Grid Power History (last 60):")
+    for ts, data in grid_power_history[-60:]:
+        logging.warning(f"  {ts}: {data}")
+    logging.warning(f"Battery Data History (last 60):")
+    for ts, data in battery_data_history[-60:]:
+        logging.warning(f"  {ts}: {data}")
 
 if __name__ == "__main__":
     logging.info("Script started")
