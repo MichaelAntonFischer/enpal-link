@@ -384,8 +384,24 @@ def fetch_battery_data():
 
             if response.status_code == 200:
                 data = StringIO(response.text)
-                df = pd.read_csv(data)
+                # Check if response is empty
+                if not response.text.strip():
+                    logging.error("Received empty response from Enpal box")
+                    continue
+                
+                try:
+                    df = pd.read_csv(data)
+                except pd.errors.EmptyDataError:
+                    logging.error("Received empty data frame from Enpal box")
+                    continue
+                
                 if not df.empty:
+                    # Check if required fields exist in the dataframe
+                    required_fields = ['Power.Battery.Charge.Discharge', 'Energy.Battery.Charge.Level']
+                    if not all(field in df['_field'].values for field in required_fields):
+                        logging.error(f"Missing required fields in response. Available fields: {df['_field'].unique()}")
+                        continue
+                        
                     battery_charge_discharge = df[df['_field'] == 'Power.Battery.Charge.Discharge']['_value'].iloc[-1]
                     battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
                     last_working_ip = INFLUX_API.split("//")[1].split(":")[0]  # Update last working IP
@@ -397,10 +413,13 @@ def fetch_battery_data():
                     logging.error("DataFrame is empty or required columns are missing.")
             else:
                 logging.error(f"Data query failed with status {response.status_code}.")
+                logging.error(f"Response content: {response.text}")
         except requests.exceptions.RequestException as e:
             logging.error(f"Request failed: {e}")
-            # Move to the next IP in the cycle
             last_working_ip = None
+        except Exception as e:
+            logging.error(f"Unexpected error while fetching battery data: {str(e)}")
+            continue
 
     return None
 
