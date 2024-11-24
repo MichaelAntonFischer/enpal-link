@@ -373,11 +373,11 @@ def fetch_grid_power():
 
 def fetch_battery_data():
     logging.debug("Fetching battery data...")
-    # Updated field names based on your JSON example
+    # Updated field names based on the actual JSON data
     query = f"""
     {{
       "type": "flux",
-      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Storage.Total\\" or r._field == \\"Energy.Storage.Level\\" or r._field == \\"Percent.Storage.Level\\") |> last()",
+      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Battery.Charge.Discharge\\" or r._field == \\"Energy.Battery.Charge.Level\\" or r._field == \\"Percent.Storage.Level\\") |> last()",
       "orgID": "{INFLUX_ORG_ID}"
     }}
     """
@@ -407,22 +407,47 @@ def fetch_battery_data():
                     data = StringIO(response.text)
                     df = pd.read_csv(data)
                     if not df.empty:
-                        battery_charge_discharge = df[df['_field'] == 'Power.Storage.Total']['_value'].iloc[-1]
-                        battery_charge_level = df[df['_field'] == 'Energy.Storage.Level']['_value'].iloc[-1]
+                        # Look for battery charge/discharge value
+                        battery_charge_discharge = 0.0
+                        if 'Power.Battery.Charge.Discharge' in df['_field'].values:
+                            battery_charge_discharge = df[df['_field'] == 'Power.Battery.Charge.Discharge']['_value'].iloc[-1]
+                        
+                        # Look for battery charge level (percentage)
+                        battery_charge_level = 0.0
+                        if 'Percent.Storage.Level' in df['_field'].values:
+                            battery_charge_level = df[df['_field'] == 'Percent.Storage.Level']['_value'].iloc[-1]
+                        elif 'Energy.Battery.Charge.Level' in df['_field'].values:
+                            battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
+                        
                         last_working_ip = INFLUX_API.split("//")[1].split(":")[0]
+                        
+                        logging.info(f"Battery data found - Charge/Discharge: {battery_charge_discharge}W, Level: {battery_charge_level}%")
+                        
                         return {
                             "battery_charge_discharge": float(battery_charge_discharge),
                             "battery_charge_level": float(battery_charge_level)
                         }
+                    else:
+                        logging.error("DataFrame is empty after parsing CSV")
                 except Exception as csv_error:
                     logging.error(f"CSV parsing failed: {csv_error}")
                     try:
                         # Try parsing as JSON if CSV fails
                         data = response.json()
                         if 'numberDataPoints' in data:
-                            battery_charge_discharge = data['numberDataPoints'].get('Power.Storage.Total', {}).get('value', 0.0)
-                            battery_charge_level = data['numberDataPoints'].get('Energy.Storage.Level', {}).get('value', 0.0)
+                            # Get battery charge/discharge value
+                            battery_charge_discharge = data['numberDataPoints'].get('Power.Battery.Charge.Discharge', {}).get('value', 0.0)
+                            
+                            # Get battery charge level (percentage)
+                            battery_charge_level = data['numberDataPoints'].get('Percent.Storage.Level', {}).get('value', 0.0)
+                            if battery_charge_level == 0.0:
+                                # Try alternate field name
+                                battery_charge_level = data['numberDataPoints'].get('Energy.Battery.Charge.Level', {}).get('value', 0.0)
+                            
                             last_working_ip = INFLUX_API.split("//")[1].split(":")[0]
+                            
+                            logging.info(f"Battery data found - Charge/Discharge: {battery_charge_discharge}W, Level: {battery_charge_level}%")
+                            
                             return {
                                 "battery_charge_discharge": float(battery_charge_discharge),
                                 "battery_charge_level": float(battery_charge_level)
