@@ -253,7 +253,6 @@ def fetch_data():
     Timer(10, fetch_data).start()
 
 def fetch_solar_generation():
-    global last_working_ip
     logging.debug("Fetching solar generation data...")
     query = f"""
     {{
@@ -269,48 +268,39 @@ def fetch_solar_generation():
         "Content-type": "application/json"
     }
 
-    # Try the last known working IP first
-    if last_working_ip:
-        INFLUX_API = f"http://{last_working_ip}:8086/api/v2/query?orgID={INFLUX_ORG_ID}"
-        try:
-            response = requests.post(INFLUX_API, headers=headers, data=query)
-            logging.debug(f"Response status: {response.status_code} from {INFLUX_API}")
-
-            if response.status_code == 200:
-                data = StringIO(response.text)
-                df = pd.read_csv(data)
-                if not df.empty:
-                    solar_generation = df[df['_field'] == 'Power.Production.Total']['_value'].iloc[-1]
-                    return {"solar_power_generation": float(solar_generation)}
-                else:
-                    logging.error("DataFrame is empty or required columns are missing.")
-            else:
-                logging.error(f"Data query failed with status {response.status_code}.")
-        except requests.exceptions.RequestException as e:
-            logging.error(f"Request failed: {e}")
-            last_working_ip = None  # Reset last working IP if it fails
-
-    # If the last known IP fails, cycle through the list
     for _ in range(len(INFLUX_HOSTS)):
         INFLUX_API = get_influx_api()
-        logging.debug(f"Trying INFLUX_API: {INFLUX_API}")
         try:
             response = requests.post(INFLUX_API, headers=headers, data=query)
             logging.debug(f"Response status: {response.status_code} from {INFLUX_API}")
 
             if response.status_code == 200:
-                data = StringIO(response.text)
-                df = pd.read_csv(data)
-                if not df.empty:
-                    solar_generation = df[df['_field'] == 'Power.Production.Total']['_value'].iloc[-1]
-                    last_working_ip = INFLUX_API.split("//")[1].split(":")[0]  # Update last working IP
-                    return {"solar_power_generation": float(solar_generation)}
-                else:
-                    logging.error("DataFrame is empty or required columns are missing.")
+                try:
+                    data = response.json()
+                    if 'numberDataPoints' in data:
+                        # New format
+                        solar_generation = data['numberDataPoints'].get('Power.Production.Total', {}).get('value', 0.0)
+                        last_working_ip = INFLUX_API.split("//")[1].split(":")[0]
+                        return {"solar_power_generation": float(solar_generation)}
+                    else:
+                        # Try old format with CSV
+                        data_csv = StringIO(response.text)
+                        df = pd.read_csv(data_csv)
+                        if not df.empty:
+                            solar_generation = df[df['_field'] == 'Power.Production.Total']['_value'].iloc[-1]
+                            last_working_ip = INFLUX_API.split("//")[1].split(":")[0]
+                            return {"solar_power_generation": float(solar_generation)}
+                except Exception as e:
+                    logging.error(f"Error parsing response: {str(e)}")
+                    continue
             else:
                 logging.error(f"Data query failed with status {response.status_code}.")
         except requests.exceptions.RequestException as e:
             logging.error(f"Request failed: {e}")
+            last_working_ip = None
+        except Exception as e:
+            logging.error(f"Unexpected error while fetching solar data: {str(e)}")
+            continue
 
     return None
 
@@ -363,7 +353,7 @@ def fetch_battery_data():
     query = f"""
     {{
       "type": "flux",
-      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Battery.Charge.Discharge\\" or r._field == \\"Energy.Battery.Charge.Level\\") |> last()",
+      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Battery.Charge.Discharge\\" or r._field == \\"Energy.Battery.Charge.Level\\" or r._field == \\"Percent.Storage.Level\\") |> last()",
       "orgID": "{INFLUX_ORG_ID}"
     }}
     """
@@ -383,34 +373,32 @@ def fetch_battery_data():
             logging.debug(f"Response output: {response.text}")
 
             if response.status_code == 200:
-                data = StringIO(response.text)
-                # Check if response is empty
-                if not response.text.strip():
-                    logging.error("Received empty response from Enpal box")
-                    continue
-                
                 try:
-                    df = pd.read_csv(data)
-                except pd.errors.EmptyDataError:
-                    logging.error("Received empty data frame from Enpal box")
+                    data = response.json()
+                    if 'numberDataPoints' in data:
+                        # New format
+                        battery_charge_discharge = data['numberDataPoints'].get('Power.Storage.Total', {}).get('value', 0.0)
+                        battery_charge_level = data['numberDataPoints'].get('Energy.Storage.Level', {}).get('value', 0.0)
+                        last_working_ip = INFLUX_API.split("//")[1].split(":")[0]
+                        return {
+                            "battery_charge_discharge": float(battery_charge_discharge),
+                            "battery_charge_level": float(battery_charge_level)
+                        }
+                    else:
+                        # Try old format with CSV
+                        data_csv = StringIO(response.text)
+                        df = pd.read_csv(data_csv)
+                        if not df.empty:
+                            battery_charge_discharge = df[df['_field'] == 'Power.Battery.Charge.Discharge']['_value'].iloc[-1]
+                            battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
+                            last_working_ip = INFLUX_API.split("//")[1].split(":")[0]
+                            return {
+                                "battery_charge_discharge": float(battery_charge_discharge),
+                                "battery_charge_level": float(battery_charge_level)
+                            }
+                except Exception as e:
+                    logging.error(f"Error parsing response: {str(e)}")
                     continue
-                
-                if not df.empty:
-                    # Check if required fields exist in the dataframe
-                    required_fields = ['Power.Battery.Charge.Discharge', 'Energy.Battery.Charge.Level']
-                    if not all(field in df['_field'].values for field in required_fields):
-                        logging.error(f"Missing required fields in response. Available fields: {df['_field'].unique()}")
-                        continue
-                        
-                    battery_charge_discharge = df[df['_field'] == 'Power.Battery.Charge.Discharge']['_value'].iloc[-1]
-                    battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
-                    last_working_ip = INFLUX_API.split("//")[1].split(":")[0]  # Update last working IP
-                    return {
-                        "battery_charge_discharge": float(battery_charge_discharge),
-                        "battery_charge_level": float(battery_charge_level)
-                    }
-                else:
-                    logging.error("DataFrame is empty or required columns are missing.")
             else:
                 logging.error(f"Data query failed with status {response.status_code}.")
                 logging.error(f"Response content: {response.text}")
