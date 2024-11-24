@@ -107,17 +107,18 @@ def verify_working_ip():
     global last_working_ip, no_working_ip_found
     no_working_ip_found = False  # Reset the flag at the start of each verification
 
+    # Simple query to test connectivity
     query = f"""
     {{
       "type": "flux",
-      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> limit(n:1)",
+      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: -1m) |> limit(n:1)",
       "orgID": "{INFLUX_ORG_ID}"
     }}
     """
 
     headers = {
         "Authorization": f"Token {INFLUX_TOKEN}",
-        "Accept": "application/json",
+        "Accept": "*/*",  # Accept any content type
         "Content-type": "application/json"
     }
 
@@ -126,6 +127,10 @@ def verify_working_ip():
         INFLUX_API = f"http://{last_working_ip}:8086/api/v2/query?orgID={INFLUX_ORG_ID}"
         try:
             response = requests.post(INFLUX_API, headers=headers, data=query)
+            logging.info(f"Verification response status: {response.status_code}")
+            logging.info(f"Verification response headers: {dict(response.headers)}")
+            logging.info(f"Verification response content: {response.text[:200]}")  # First 200 chars
+
             if response.status_code == 200:
                 logging.info(f"Verified working IP: {last_working_ip}")
                 return True
@@ -140,15 +145,19 @@ def verify_working_ip():
         INFLUX_API = get_influx_api()
         try:
             response = requests.post(INFLUX_API, headers=headers, data=query)
+            logging.info(f"Trying new IP - Response status: {response.status_code}")
+            logging.info(f"Response headers: {dict(response.headers)}")
+            logging.info(f"Response content: {response.text[:200]}")
+
             if response.status_code == 200:
-                last_working_ip = INFLUX_API.split("//")[1].split(":")[0]  # Update last working IP
+                last_working_ip = INFLUX_API.split("//")[1].split(":")[0]
                 logging.info(f"New working IP found: {last_working_ip}")
                 return True
         except requests.exceptions.RequestException as e:
-            logging.error(f"Verification request failed: {e}")
+            logging.error(f"Request failed: {e}")
 
     logging.error("No working IP found.")
-    no_working_ip_found = True  # Set the flag if no IP is found
+    no_working_ip_found = True
     return False
 
 def update_history(history_list, new_value):
@@ -364,17 +373,18 @@ def fetch_grid_power():
 
 def fetch_battery_data():
     logging.debug("Fetching battery data...")
+    # Updated field names based on your JSON example
     query = f"""
     {{
       "type": "flux",
-      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Battery.Charge.Discharge\\" or r._field == \\"Energy.Battery.Charge.Level\\" or r._field == \\"Percent.Storage.Level\\") |> last()",
+      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Storage.Total\\" or r._field == \\"Energy.Storage.Level\\" or r._field == \\"Percent.Storage.Level\\") |> last()",
       "orgID": "{INFLUX_ORG_ID}"
     }}
     """
 
     headers = {
         "Authorization": f"Token {INFLUX_TOKEN}",
-        "Accept": "application/json",
+        "Accept": "*/*",  # Accept any content type
         "Content-type": "application/json"
     }
 
@@ -383,36 +393,43 @@ def fetch_battery_data():
         logging.debug(f"Trying INFLUX_API: {INFLUX_API}")
         try:
             response = requests.post(INFLUX_API, headers=headers, data=query)
-            logging.debug(f"Response status: {response.status_code} from {INFLUX_API}")
-            logging.debug(f"Response output: {response.text}")
+            logging.info(f"Battery data response status: {response.status_code}")
+            logging.info(f"Battery data response headers: {dict(response.headers)}")
+            logging.info(f"Battery data response content: {response.text[:200]}")
 
             if response.status_code == 200:
+                if not response.text.strip():
+                    logging.error("Received empty response")
+                    continue
+
                 try:
-                    data = response.json()
-                    if 'numberDataPoints' in data:
-                        # New format
-                        battery_charge_discharge = data['numberDataPoints'].get('Power.Storage.Total', {}).get('value', 0.0)
-                        battery_charge_level = data['numberDataPoints'].get('Energy.Storage.Level', {}).get('value', 0.0)
+                    # Try parsing as CSV first
+                    data = StringIO(response.text)
+                    df = pd.read_csv(data)
+                    if not df.empty:
+                        battery_charge_discharge = df[df['_field'] == 'Power.Storage.Total']['_value'].iloc[-1]
+                        battery_charge_level = df[df['_field'] == 'Energy.Storage.Level']['_value'].iloc[-1]
                         last_working_ip = INFLUX_API.split("//")[1].split(":")[0]
                         return {
                             "battery_charge_discharge": float(battery_charge_discharge),
                             "battery_charge_level": float(battery_charge_level)
                         }
-                    else:
-                        # Try old format with CSV
-                        data_csv = StringIO(response.text)
-                        df = pd.read_csv(data_csv)
-                        if not df.empty:
-                            battery_charge_discharge = df[df['_field'] == 'Power.Battery.Charge.Discharge']['_value'].iloc[-1]
-                            battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
+                except Exception as csv_error:
+                    logging.error(f"CSV parsing failed: {csv_error}")
+                    try:
+                        # Try parsing as JSON if CSV fails
+                        data = response.json()
+                        if 'numberDataPoints' in data:
+                            battery_charge_discharge = data['numberDataPoints'].get('Power.Storage.Total', {}).get('value', 0.0)
+                            battery_charge_level = data['numberDataPoints'].get('Energy.Storage.Level', {}).get('value', 0.0)
                             last_working_ip = INFLUX_API.split("//")[1].split(":")[0]
                             return {
                                 "battery_charge_discharge": float(battery_charge_discharge),
                                 "battery_charge_level": float(battery_charge_level)
                             }
-                except Exception as e:
-                    logging.error(f"Error parsing response: {str(e)}")
-                    continue
+                    except Exception as json_error:
+                        logging.error(f"JSON parsing failed: {json_error}")
+                        continue
             else:
                 logging.error(f"Data query failed with status {response.status_code}.")
                 logging.error(f"Response content: {response.text}")
