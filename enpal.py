@@ -264,7 +264,7 @@ def fetch_solar_generation():
 
     headers = {
         "Authorization": f"Token {INFLUX_TOKEN}",
-        "Accept": "application/json",
+        "Accept": "application/csv",  # Changed to CSV since that's what InfluxDB typically returns
         "Content-type": "application/json"
     }
 
@@ -273,28 +273,30 @@ def fetch_solar_generation():
         try:
             response = requests.post(INFLUX_API, headers=headers, data=query)
             logging.debug(f"Response status: {response.status_code} from {INFLUX_API}")
+            logging.debug(f"Raw response content: {response.text[:200]}")  # Log first 200 chars of response
 
             if response.status_code == 200:
+                if not response.text.strip():
+                    logging.error("Received empty response")
+                    continue
+
                 try:
-                    data = response.json()
-                    if 'numberDataPoints' in data:
-                        # New format
-                        solar_generation = data['numberDataPoints'].get('Power.Production.Total', {}).get('value', 0.0)
+                    data = StringIO(response.text)
+                    df = pd.read_csv(data)
+                    if not df.empty:
+                        solar_generation = df[df['_field'] == 'Power.Production.Total']['_value'].iloc[-1]
                         last_working_ip = INFLUX_API.split("//")[1].split(":")[0]
                         return {"solar_power_generation": float(solar_generation)}
                     else:
-                        # Try old format with CSV
-                        data_csv = StringIO(response.text)
-                        df = pd.read_csv(data_csv)
-                        if not df.empty:
-                            solar_generation = df[df['_field'] == 'Power.Production.Total']['_value'].iloc[-1]
-                            last_working_ip = INFLUX_API.split("//")[1].split(":")[0]
-                            return {"solar_power_generation": float(solar_generation)}
+                        logging.error("DataFrame is empty after parsing CSV")
+                except pd.errors.EmptyDataError:
+                    logging.error("Empty data received from API")
                 except Exception as e:
-                    logging.error(f"Error parsing response: {str(e)}")
-                    continue
+                    logging.error(f"Error parsing CSV response: {str(e)}")
+                    logging.debug(f"Full response content: {response.text}")
             else:
                 logging.error(f"Data query failed with status {response.status_code}.")
+                logging.error(f"Error response: {response.text}")
         except requests.exceptions.RequestException as e:
             logging.error(f"Request failed: {e}")
             last_working_ip = None
@@ -316,35 +318,47 @@ def fetch_grid_power():
 
     headers = {
         "Authorization": f"Token {INFLUX_TOKEN}",
-        "Accept": "application/json",
+        "Accept": "application/csv",  # Changed to CSV
         "Content-type": "application/json"
     }
 
     for _ in range(len(INFLUX_HOSTS)):
         INFLUX_API = get_influx_api()
-        logging.debug(f"Trying INFLUX_API: {INFLUX_API}")
         try:
             response = requests.post(INFLUX_API, headers=headers, data=query)
             logging.debug(f"Response status: {response.status_code} from {INFLUX_API}")
-            logging.debug(f"Response output: {response.text}")
+            logging.debug(f"Raw response content: {response.text[:200]}")
 
             if response.status_code == 200:
-                data = StringIO(response.text)
-                df = pd.read_csv(data)
-                if not df.empty:
-                    grid_export = df[df['_field'] == 'Power.Grid.Export']['_value'].iloc[-1] if 'Power.Grid.Export' in df['_field'].values else 0
-                    grid_import = df[df['_field'] == 'Power.Grid.Import']['_value'].iloc[-1] if 'Power.Grid.Import' in df['_field'].values else 0
-                    grid_power = float(grid_export) - float(grid_import)
-                    last_working_ip = INFLUX_API.split("//")[1].split(":")[0]  # Update last working IP
-                    return {"grid_power": grid_power}
-                else:
-                    logging.error("DataFrame is empty or required columns are missing.")
+                if not response.text.strip():
+                    logging.error("Received empty response")
+                    continue
+
+                try:
+                    data = StringIO(response.text)
+                    df = pd.read_csv(data)
+                    if not df.empty:
+                        grid_export = df[df['_field'] == 'Power.Grid.Export']['_value'].iloc[-1] if 'Power.Grid.Export' in df['_field'].values else 0
+                        grid_import = df[df['_field'] == 'Power.Grid.Import']['_value'].iloc[-1] if 'Power.Grid.Import' in df['_field'].values else 0
+                        grid_power = float(grid_export) - float(grid_import)
+                        last_working_ip = INFLUX_API.split("//")[1].split(":")[0]
+                        return {"grid_power": grid_power}
+                    else:
+                        logging.error("DataFrame is empty after parsing CSV")
+                except pd.errors.EmptyDataError:
+                    logging.error("Empty data received from API")
+                except Exception as e:
+                    logging.error(f"Error parsing CSV response: {str(e)}")
+                    logging.debug(f"Full response content: {response.text}")
             else:
                 logging.error(f"Data query failed with status {response.status_code}.")
+                logging.error(f"Error response: {response.text}")
         except requests.exceptions.RequestException as e:
             logging.error(f"Request failed: {e}")
-            # Move to the next IP in the cycle
             last_working_ip = None
+        except Exception as e:
+            logging.error(f"Unexpected error while fetching grid data: {str(e)}")
+            continue
 
     return None
 
