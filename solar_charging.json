@@ -5,24 +5,24 @@
   {
    "udur": 300,
    "id": 0,
-   "cmt": "Winter charging (Nov-Feb) - Charge with min 6A when SoC < 60%",
+   "cmt": "Winter charging (Nov-Feb) - Enable charging below 60% SoC",
    "days": 127,
    "ctype": 50,
    "atype": 1,
    "ena": true,
    "flags": 1,
-   "cexpr": "M7.soc < 60 && (M0.month >= 11 || M0.month <= 2)"
+   "cexpr": "!(M7.soc >= 60) && (M0.month == 11 || M0.month == 12 || M0.month == 1 || M0.month == 2)"
   },
   {
    "udur": 300,
    "id": 1,
-   "cmt": "Winter charging (Nov-Feb) - Min 6A (~1400W) + solar surplus",
+   "cmt": "Winter charging (Nov-Feb) - Min 6A (~1400W)",
    "days": 127,
    "ctype": 1,
    "atype": 10,
    "ena": true,
    "flags": 19,
-   "cexpr": "M0.month >= 11 || M0.month <= 2 ? 1400 : 1200",
+   "cexpr": 1400,
    "aexpr": 0
   },
   {
@@ -34,7 +34,7 @@
    "atype": 1,
    "ena": true,
    "flags": 1,
-   "cexpr": "M7.soc >= 60 && M0.month > 2 && M0.month < 11"
+   "cexpr": "M7.soc >= 60 && M0.month >= 3 && M0.month <= 10"
   },
   {
    "udur": 300,
