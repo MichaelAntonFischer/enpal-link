@@ -3,39 +3,63 @@
  "set_id": "1",
  "charging_rules": [
   {
-   "udur": 300,
+   "udur": 0,
    "id": 0,
-   "cmt": "Winter charging (Nov-Feb) - Min 6A or solar surplus if higher",
+   "cmt": "Winter surplus",
    "days": 127,
-   "ctype": 2,
-   "atype": 10,
+   "ctype": 51,
+   "atype": 22,
    "ena": true,
-   "flags": 2,
-   "cexpr": 1400,
-   "aexpr": "M0.month >= 11 || M0.month <= 2 ? M6.solar_power : 0"
+   "flags": 0,
+   "name": "winter surplus per phase",
+   "aexpr": "M0.month >= 11 || M0.month <= 2 ? 16000 : 0"
   },
   {
-   "udur": 300,
+   "udur": 0,
    "id": 1,
-   "cmt": "Summer charging (Mar-Oct) - Stop at 60% SoC",
+   "cmt": "Winter minimum current (6A)",
    "days": 127,
-   "ctype": 50,
-   "atype": 1,
+   "ctype": 51,
+   "atype": 22,
    "ena": true,
-   "flags": 1,
-   "cexpr": "M7.soc >= 60 && M0.month >= 3 && M0.month <= 10"
+   "flags": 0,
+   "name": "winter min current",
+   "aexpr": "M0.month >= 11 || M0.month <= 2 ? 6000 : 0"
   },
   {
-   "udur": 300,
+   "udur": 0,
    "id": 2,
-   "cmt": "Summer charging (Mar-Oct) - Normal solar surplus charging",
+   "cmt": "Summer surplus",
+   "days": 127,
+   "ctype": 51,
+   "atype": 22,
+   "ena": true,
+   "flags": 0,
+   "name": "summer surplus per phase",
+   "aexpr": "M0.month >= 3 && M0.month <= 10 && M7.soc < 60 ? 16000 : 0"
+  },
+  {
+   "udur": 0,
+   "id": 3,
+   "cmt": "Apply charging parameters",
    "days": 127,
    "ctype": 1,
    "atype": 10,
    "ena": true,
    "flags": 2,
-   "cexpr": 2100,
+   "cexpr": "param(1)",
    "aexpr": 1
+  },
+  {
+   "udur": 300,
+   "id": 4,
+   "cmt": "Set final charging current",
+   "days": 127,
+   "ctype": 51,
+   "atype": 0,
+   "ena": true,
+   "flags": 0,
+   "aexpr": "lb_cur > 0 ? max(lb_cur, param(2)) : 0"
   }
  ]
 }
