@@ -12,7 +12,7 @@
    "ena": true,
    "flags": 0,
    "name": "winter surplus per phase",
-   "aexpr": "M0.month == 11 || M0.month == 12 || M0.month == 1 || M0.month == 2 ? M6.solar_power / 3 : 0"
+   "aexpr": "M0.month == 11 || M0.month == 12 || M0.month == 1 || M0.month == 2 ? 16000 : 0"
   },
   {
    "udur": 0,
@@ -36,7 +36,7 @@
    "ena": true,
    "flags": 0,
    "name": "summer surplus per phase",
-   "aexpr": "M7.soc < 60 ? M6.solar_power / 3 : 0"
+   "aexpr": "M7.soc < 60 ? 16000 : 0"
   },
   {
    "udur": 0,
@@ -59,7 +59,7 @@
    "atype": 0,
    "ena": true,
    "flags": 0,
-   "aexpr": "lb_cur > 0 ? max(lb_cur, param(2)) : 0"
+   "aexpr": "lb_cur > 0 ? (M0.month == 11 || M0.month == 12 || M0.month == 1 || M0.month == 2 ? max(lb_cur, 6000) : lb_cur) : 0"
   }
  ]
 }
