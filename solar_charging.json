@@ -7,12 +7,12 @@
    "id": 0,
    "cmt": "Winter charging (Nov-Feb) - Min 6A or solar surplus if higher",
    "days": 127,
-   "ctype": 1,
+   "ctype": 2,
    "atype": 10,
    "ena": true,
    "flags": 2,
-   "cexpr": "M0.month >= 11 || M0.month <= 2 ? max(1400, M6.solar_power) : M6.solar_power",
-   "aexpr": 1
+   "cexpr": 1400,
+   "aexpr": "M0.month >= 11 || M0.month <= 2 ? M6.solar_power : 0"
   },
   {
    "udur": 300,
