@@ -373,18 +373,18 @@ def fetch_grid_power():
 
 def fetch_battery_data():
     logging.debug("Fetching battery data...")
-    # Updated field names based on the actual JSON data
+    # Updated field names based on the actual JSON data structure
     query = f"""
     {{
       "type": "flux",
-      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Battery.Charge.Discharge\\" or r._field == \\"Energy.Battery.Charge.Level\\" or r._field == \\"Percent.Storage.Level\\") |> last()",
+      "query": "from(bucket: \\"{INFLUX_BUCKET}\\") |> range(start: {QUERY_RANGE_START}) |> filter(fn: (r) => r._field == \\"Power.Storage.Total\\" or r._field == \\"Percent.Storage.Level\\") |> last()",
       "orgID": "{INFLUX_ORG_ID}"
     }}
     """
 
     headers = {
         "Authorization": f"Token {INFLUX_TOKEN}",
-        "Accept": "*/*",  # Accept any content type
+        "Accept": "*/*",
         "Content-type": "application/json"
     }
 
@@ -394,7 +394,6 @@ def fetch_battery_data():
         try:
             response = requests.post(INFLUX_API, headers=headers, data=query)
             logging.info(f"Battery data response status: {response.status_code}")
-            logging.info(f"Battery data response headers: {dict(response.headers)}")
             logging.info(f"Battery data response content: {response.text[:200]}")
 
             if response.status_code == 200:
@@ -407,21 +406,26 @@ def fetch_battery_data():
                     data = StringIO(response.text)
                     df = pd.read_csv(data)
                     if not df.empty:
-                        # Look for battery charge/discharge value
+                        # Look for battery charge/discharge value (Power.Storage.Total)
                         battery_charge_discharge = 0.0
-                        if 'Power.Battery.Charge.Discharge' in df['_field'].values:
-                            battery_charge_discharge = df[df['_field'] == 'Power.Battery.Charge.Discharge']['_value'].iloc[-1]
+                        if 'Power.Storage.Total' in df['_field'].values:
+                            battery_charge_discharge = df[df['_field'] == 'Power.Storage.Total']['_value'].iloc[-1]
+                            logging.info(f"Found battery power: {battery_charge_discharge}W")
+                        else:
+                            logging.warning("Power.Storage.Total not found in response")
                         
                         # Look for battery charge level (percentage)
                         battery_charge_level = 0.0
                         if 'Percent.Storage.Level' in df['_field'].values:
                             battery_charge_level = df[df['_field'] == 'Percent.Storage.Level']['_value'].iloc[-1]
-                        elif 'Energy.Battery.Charge.Level' in df['_field'].values:
-                            battery_charge_level = df[df['_field'] == 'Energy.Battery.Charge.Level']['_value'].iloc[-1]
+                            logging.info(f"Found battery level: {battery_charge_level}%")
+                        else:
+                            logging.warning("Percent.Storage.Level not found in response")
                         
                         last_working_ip = INFLUX_API.split("//")[1].split(":")[0]
                         
-                        logging.info(f"Battery data found - Charge/Discharge: {battery_charge_discharge}W, Level: {battery_charge_level}%")
+                        # Log the final values being returned
+                        logging.info(f"Returning battery data - Power: {battery_charge_discharge}W, Level: {battery_charge_level}%")
                         
                         return {
                             "battery_charge_discharge": float(battery_charge_discharge),
@@ -435,18 +439,18 @@ def fetch_battery_data():
                         # Try parsing as JSON if CSV fails
                         data = response.json()
                         if 'numberDataPoints' in data:
-                            # Get battery charge/discharge value
-                            battery_charge_discharge = data['numberDataPoints'].get('Power.Battery.Charge.Discharge', {}).get('value', 0.0)
+                            # Get battery charge/discharge value from Power.Storage.Total
+                            battery_charge_discharge = data['numberDataPoints'].get('Power.Storage.Total', {}).get('value', 0.0)
+                            logging.info(f"Found battery power from JSON: {battery_charge_discharge}W")
                             
-                            # Get battery charge level (percentage)
+                            # Get battery charge level from Percent.Storage.Level
                             battery_charge_level = data['numberDataPoints'].get('Percent.Storage.Level', {}).get('value', 0.0)
-                            if battery_charge_level == 0.0:
-                                # Try alternate field name
-                                battery_charge_level = data['numberDataPoints'].get('Energy.Battery.Charge.Level', {}).get('value', 0.0)
+                            logging.info(f"Found battery level from JSON: {battery_charge_level}%")
                             
                             last_working_ip = INFLUX_API.split("//")[1].split(":")[0]
                             
-                            logging.info(f"Battery data found - Charge/Discharge: {battery_charge_discharge}W, Level: {battery_charge_level}%")
+                            # Log the final values being returned
+                            logging.info(f"Returning battery data from JSON - Power: {battery_charge_discharge}W, Level: {battery_charge_level}%")
                             
                             return {
                                 "battery_charge_discharge": float(battery_charge_discharge),
