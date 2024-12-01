@@ -5,29 +5,18 @@
   {
    "udur": 300,
    "id": 0,
-   "cmt": "Winter charging (Nov-Feb) - Enable charging below 60% SoC",
-   "days": 127,
-   "ctype": 50,
-   "atype": 1,
-   "ena": true,
-   "flags": 1,
-   "cexpr": "!(M7.soc >= 60) && (M0.month == 11 || M0.month == 12 || M0.month == 1 || M0.month == 2)"
-  },
-  {
-   "udur": 300,
-   "id": 1,
-   "cmt": "Winter charging (Nov-Feb) - Solar surplus charging",
+   "cmt": "Winter charging (Nov-Feb) - Min 6A or solar surplus if higher",
    "days": 127,
    "ctype": 1,
    "atype": 10,
    "ena": true,
    "flags": 2,
-   "cexpr": "max(1400, M6.solar_power)",
+   "cexpr": "M0.month >= 11 || M0.month <= 2 ? max(1400, M6.solar_power) : M6.solar_power",
    "aexpr": 1
   },
   {
    "udur": 300,
-   "id": 2,
+   "id": 1,
    "cmt": "Summer charging (Mar-Oct) - Stop at 60% SoC",
    "days": 127,
    "ctype": 50,
@@ -38,7 +27,7 @@
   },
   {
    "udur": 300,
-   "id": 3,
+   "id": 2,
    "cmt": "Summer charging (Mar-Oct) - Normal solar surplus charging",
    "days": 127,
    "ctype": 1,
