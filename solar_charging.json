@@ -16,13 +16,13 @@
   {
    "udur": 300,
    "id": 1,
-   "cmt": "Winter charging (Nov-Feb) - Min 6A (~1400W) + solar surplus",
+   "cmt": "Winter charging (Nov-Feb) - Solar surplus charging",
    "days": 127,
    "ctype": 1,
    "atype": 10,
    "ena": true,
-   "flags": 18,
-   "cexpr": 1400,
+   "flags": 2,
+   "cexpr": "max(1400, M6.solar_power)",
    "aexpr": 1
   },
   {
