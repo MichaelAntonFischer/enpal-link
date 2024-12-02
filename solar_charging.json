@@ -5,61 +5,145 @@
   {
    "udur": 0,
    "id": 0,
-   "cmt": "Winter surplus",
+   "cmt": "Check solar surplus",
    "days": 127,
    "ctype": 51,
    "atype": 22,
    "ena": true,
    "flags": 0,
-   "name": "winter surplus per phase",
-   "aexpr": "M0.month == 11 || M0.month == 12 || M0.month == 1 || M0.month == 2 ? 16000 : 0"
+   "name": "solar surplus",
+   "aexpr": "lb_cur"
   },
   {
    "udur": 0,
    "id": 1,
-   "cmt": "Winter minimum current (6A)",
+   "cmt": "Minimum current (6A)",
    "days": 127,
    "ctype": 51,
    "atype": 22,
    "ena": true,
    "flags": 0,
-   "name": "winter min current",
-   "aexpr": "M0.month == 11 || M0.month == 12 || M0.month == 1 || M0.month == 2 ? 6000 : 0"
+   "name": "min current",
+   "aexpr": "6000"
   },
   {
    "udur": 0,
    "id": 2,
-   "cmt": "Summer surplus",
+   "cmt": "March SoC limit",
    "days": 127,
    "ctype": 51,
    "atype": 22,
    "ena": true,
    "flags": 0,
-   "name": "summer surplus per phase",
-   "aexpr": "M7.soc < 60 ? 16000 : 0"
+   "name": "soc limit mar",
+   "aexpr": "M0.month == 3 ? 0 : 1"
   },
   {
    "udur": 0,
    "id": 3,
-   "cmt": "Apply charging parameters",
+   "cmt": "April SoC limit",
    "days": 127,
-   "ctype": 1,
-   "atype": 10,
+   "ctype": 51,
+   "atype": 22,
    "ena": true,
-   "flags": 2,
-   "cexpr": "param(1)",
-   "aexpr": 1
+   "flags": 0,
+   "name": "soc limit apr",
+   "aexpr": "M0.month == 4 ? 0 : 1"
+  },
+  {
+   "udur": 0,
+   "id": 4,
+   "cmt": "May SoC limit",
+   "days": 127,
+   "ctype": 51,
+   "atype": 22,
+   "ena": true,
+   "flags": 0,
+   "name": "soc limit may",
+   "aexpr": "M0.month == 5 ? 0 : 1"
+  },
+  {
+   "udur": 0,
+   "id": 5,
+   "cmt": "June SoC limit",
+   "days": 127,
+   "ctype": 51,
+   "atype": 22,
+   "ena": true,
+   "flags": 0,
+   "name": "soc limit jun",
+   "aexpr": "M0.month == 6 ? 0 : 1"
+  },
+  {
+   "udur": 0,
+   "id": 6,
+   "cmt": "July SoC limit",
+   "days": 127,
+   "ctype": 51,
+   "atype": 22,
+   "ena": true,
+   "flags": 0,
+   "name": "soc limit jul",
+   "aexpr": "M0.month == 7 ? 0 : 1"
+  },
+  {
+   "udur": 0,
+   "id": 7,
+   "cmt": "August SoC limit",
+   "days": 127,
+   "ctype": 51,
+   "atype": 22,
+   "ena": true,
+   "flags": 0,
+   "name": "soc limit aug",
+   "aexpr": "M0.month == 8 ? 0 : 1"
+  },
+  {
+   "udur": 0,
+   "id": 8,
+   "cmt": "September SoC limit",
+   "days": 127,
+   "ctype": 51,
+   "atype": 22,
+   "ena": true,
+   "flags": 0,
+   "name": "soc limit sep",
+   "aexpr": "M0.month == 9 ? 0 : 1"
+  },
+  {
+   "udur": 0,
+   "id": 9,
+   "cmt": "October SoC limit",
+   "days": 127,
+   "ctype": 51,
+   "atype": 22,
+   "ena": true,
+   "flags": 0,
+   "name": "soc limit oct",
+   "aexpr": "M0.month == 10 ? 0 : 1"
+  },
+  {
+   "udur": 0,
+   "id": 10,
+   "cmt": "Check SoC",
+   "days": 127,
+   "ctype": 51,
+   "atype": 22,
+   "ena": true,
+   "flags": 0,
+   "name": "soc check",
+   "aexpr": "M7.soc < 60 ? 1 : 0"
   },
   {
    "udur": 300,
-   "id": 4,
+   "id": 11,
    "cmt": "Set final charging current",
    "days": 127,
    "ctype": 51,
    "atype": 0,
    "ena": true,
    "flags": 0,
-   "aexpr": "lb_cur > 0 ? (M0.month == 11 || M0.month == 12 || M0.month == 1 || M0.month == 2 ? max(lb_cur, 6000) : lb_cur) : 0"
+   "aexpr": "lb_cur > 0 ? max(lb_cur, param(2)) : 0"
   }
  ]
 }
