@@ -1,0 +1,53 @@
+{
+ "name": "Solarladen Winter",
+ "set_id": "2",
+ "charging_rules": [
+  {
+   "udur": 0,
+   "id": 1,
+   "cmt": "Set surplus per phase limit",
+   "days": 127,
+   "ctype": 51,
+   "atype": 22,
+   "ena": true,
+   "flags": 0,
+   "name": "surplus per phase",
+   "aexpr": "16000"
+  },
+  {
+   "udur": 0,
+   "id": 2,
+   "cmt": "Set minimum current (6A)",
+   "days": 127,
+   "ctype": 51,
+   "atype": 22,
+   "ena": true,
+   "flags": 0,
+   "name": "min current",
+   "aexpr": "6000"
+  },
+  {
+   "udur": 0,
+   "id": 3,
+   "cmt": "Apply charging parameters",
+   "days": 127,
+   "ctype": 1,
+   "atype": 10,
+   "ena": true,
+   "flags": 2,
+   "cexpr": "param(1)",
+   "aexpr": 1
+  },
+  {
+   "udur": 300,
+   "id": 4,
+   "cmt": "Set final charging current",
+   "days": 127,
+   "ctype": 51,
+   "atype": 0,
+   "ena": true,
+   "flags": 0,
+   "aexpr": "lb_cur > 0 ? max(lb_cur, param(2)) : 0"
+  }
+ ]
+}
