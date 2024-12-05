@@ -5,10 +5,10 @@
      {
       "udur": 300,
       "id": 2,
-      "cmt": "Check SoC and set charging",
+      "cmt": "Enable charging if SoC >= 60%",
       "days": 127,
       "ctype": 50,
-      "atype": 1,
+      "atype": 0,
       "ena": true,
       "flags": 1,
       "cexpr": "M7.soc >= 60"  
