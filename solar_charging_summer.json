@@ -5,13 +5,13 @@
      {
       "udur": 300,
       "id": 2,
-      "cmt": "Stop charging and exit if SoC < 60%",
+      "cmt": "Continue only if SoC >= 60%, otherwise stop and exit",
       "days": 127,
       "ctype": 50,
-      "atype": 1,
+      "atype": 0,
       "ena": true,
       "flags": 2,
-      "cexpr": "M7.soc < 60"  
+      "cexpr": "M7.soc >= 60"  
      },
      {
         "udur": 300,
