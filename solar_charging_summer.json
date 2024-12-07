@@ -1,6 +1,6 @@
 {
     "name": "Solarladen Sommer",
-    "set_id": "3",
+    "set_id": "1",
     "charging_rules": [
      {
       "udur": 300,
@@ -10,7 +10,7 @@
       "ctype": 50,
       "atype": 0,
       "ena": true,
-      "flags": 18,
+      "flags": 16,
       "cexpr": "M7.soc < 60",
       "aexpr": 0
      },
@@ -22,7 +22,7 @@
       "ctype": 51,
       "atype": 0,
       "ena": true,
-      "flags": 0,
+      "flags": 2,
       "aexpr": "max(surplus_pcur+2000, 6000)"
      }
     ]
