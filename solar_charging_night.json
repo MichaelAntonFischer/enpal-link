@@ -1,20 +1,32 @@
 {
- "name": "Solarladen Nacht",
- "set_id": "4",
- "charging_rules": [
-  {
-   "udur": 300,
-   "id": 1,
-   "cmt": "Full power charging with PV surplus between midnight and 5 AM",
-   "days": 127,
-   "ctype": 51,
-   "atype": 0,
-   "ena": true,
-   "flags": 0,
-   "name": "solar charging night",
-       "aexpr": "hour >= 0 && hour < 5 ? max(surplus_pcur, 16000) : surplus_pcur",
-   "start_time": "00:00",
-   "end_time": "05:00"
-  }
- ]
-} 
+    "name": "Solar Charging Night",
+    "set_id": "4",
+    "charging_rules": [
+     {
+      "udur": 0,
+      "id": 2,
+      "cmt": "PV surplus charging outside night hours",
+      "days": 127,
+      "ctype": 0,
+      "atype": 0,
+      "ena": true,
+      "flags": 2,
+      "time": 300,
+      "dur": 1140,
+      "aexpr": "surplus_pcur"
+     },
+     {
+      "udur": 0,
+      "id": 1,
+      "cmt": "Full power charging (16A) between midnight and 5 AM",
+      "days": 127,
+      "ctype": 0,
+      "atype": 0,
+      "ena": true,
+      "flags": 0,
+      "time": 0,
+      "dur": 300,
+      "aexpr": 16000
+     }
+    ]
+   }
