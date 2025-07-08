@@ -1,32 +1,45 @@
 {
-    "name": "Solar Charging Night",
+    "name": "Solarladen Nacht",
     "set_id": "4",
-    "charging_rules": [
-     {
-      "udur": 0,
-      "id": 2,
-      "cmt": "PV surplus charging outside night hours",
-      "days": 127,
-      "ctype": 0,
-      "atype": 0,
-      "ena": true,
-      "flags": 2,
-      "time": 300,
-      "dur": 1140,
-      "aexpr": "surplus_pcur"
-     },
-     {
-      "udur": 0,
-      "id": 1,
-      "cmt": "Full power charging (16A) between midnight and 5 AM",
-      "days": 127,
-      "ctype": 0,
-      "atype": 0,
-      "ena": true,
-      "flags": 0,
-      "time": 0,
-      "dur": 300,
-      "aexpr": 16000
-     }
-    ]
-   }
+     "charging_rules": [
+  {
+   "udur": 0,
+   "id": 0,
+   "cmt": "SOC condition for day charging",
+   "days": 127,
+   "ctype": 50,
+   "atype": 1,
+   "ena": true,
+   "flags": 2,
+   "time": 300,
+   "dur": 1140,
+   "cexpr": "M7.soc > 60"
+  },
+  {
+   "udur": 0,
+   "id": 2,
+   "cmt": "PV surplus charging with 6A minimum (like summer)",
+   "days": 127,
+   "ctype": 51,
+   "atype": 0,
+   "ena": true,
+   "flags": 2,
+   "time": 300,
+   "dur": 1140,
+   "aexpr": "max(surplus_pcur, 6000)"
+  },
+  {
+   "udur": 0,
+   "id": 1,
+   "cmt": "Full power charging (16A) between midnight and 5 AM",
+   "days": 127,
+   "ctype": 0,
+   "atype": 0,
+   "ena": true,
+   "flags": 0,
+   "time": 0,
+   "dur": 300,
+   "aexpr": 16000
+  }
+ ]
+}
