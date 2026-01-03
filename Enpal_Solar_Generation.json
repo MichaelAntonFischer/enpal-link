@@ -1,35 +1,33 @@
 {
-    "rtype": 1,  
-    "name": "Enpal Solar Generation vMeter", 
-    "manufacturer": "Enpal",
-    "dev_type": "solar_surplus", 
-    "delay_accumulated": false,  
-  
-    "type_designation": {
-      "address": "",
-      "type": "string",
-      "fixed": "Solar Surplus Meter"
-    },
-    "version": {
-      "address": "",
-      "type": "string",
-      "fixed": "1.0"
-    },
-    "firmware_version": {
-      "address": "",
-      "type": "string",
-      "fixed": "1.0"
-    },
-    "serial": {
-      "address": "",
-      "type": "string",
-      "fixed": "0"
-    },
-    "power_w": {
-      "address": "GET /solar_generation",
-      "query": "solar_power_generation",
-      "type": "float",
-      "resolution": 1.0
-    }
+  "rtype": 1,
+  "name": "Enpal Solar Generation vMeter",
+  "manufacturer": "Enpal",
+  "dev_type": 2,
+  "delay_accumulated": false,
+  "type_designation": {
+    "address": "",
+    "type": "string",
+    "fixed": "Solar Surplus Meter"
+  },
+  "version": {
+    "address": "",
+    "type": "string",
+    "fixed": "1.0"
+  },
+  "firmware_version": {
+    "address": "",
+    "type": "string",
+    "fixed": "1.0"
+  },
+  "serial": {
+    "address": "",
+    "type": "string",
+    "fixed": "0"
+  },
+  "power_w": {
+    "address": "GET /solar_generation",
+    "query": "solar_power_generation",
+    "type": "float",
+    "resolution": 1.0
   }
-  
+}

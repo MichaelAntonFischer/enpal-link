@@ -1,34 +1,33 @@
 {
-    "rtype": 1,  
-    "name": "Enpal Grid Power Meter", 
-    "manufacturer": "Enpal",
-    "dev_type": "grid_power", 
-    "delay_accumulated": false,  
-  
-    "type_designation": {
-      "address": "",
-      "type": "string",
-      "fixed": "Grid Power Meter"
-    },
-    "version": {
-      "address": "",
-      "type": "string",
-      "fixed": "1.0"
-    },
-    "firmware_version": {
-      "address": "",
-      "type": "string",
-      "fixed": "1.0"
-    },
-    "serial": {
-      "address": "",
-      "type": "string",
-      "fixed": "0"
-    },
-    "power_w": {
-        "address": "GET /grid_power",
-        "query": "grid_power",
-        "type": "float",
-        "resolution": 1.0
-    }
+  "rtype": 1,
+  "name": "Enpal Grid Power Meter",
+  "manufacturer": "Enpal",
+  "dev_type": 1,
+  "delay_accumulated": false,
+  "type_designation": {
+    "address": "",
+    "type": "string",
+    "fixed": "Grid Power Meter"
+  },
+  "version": {
+    "address": "",
+    "type": "string",
+    "fixed": "1.0"
+  },
+  "firmware_version": {
+    "address": "",
+    "type": "string",
+    "fixed": "1.0"
+  },
+  "serial": {
+    "address": "",
+    "type": "string",
+    "fixed": "0"
+  },
+  "power_w": {
+    "address": "GET /grid_power",
+    "query": "grid_power",
+    "type": "float",
+    "resolution": 1.0
+  }
 }
