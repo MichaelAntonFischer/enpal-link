@@ -1,28 +1,28 @@
 {
     "name": "Solarladen Sommer",
-    "set_id": "3",
+    "set_id": "1",
     "charging_rules": [
-     {
-      "udur": 300,
-      "id": 0,
-      "cmt": "",
-      "days": 127,
-      "ctype": 50,
-      "atype": 1,
-      "ena": true,
-      "flags": 0,
-      "cexpr": "M7.soc > 60"
-     },
-     {
-      "udur": 300,
-      "id": 1,
-      "cmt": "Set charging current to maximum of PV surplus or 6A",
-      "days": 127,
-      "ctype": 51,
-      "atype": 0,
-      "ena": true,
-      "flags": 0,
-      "aexpr": "max(surplus_pcur, 6000)"
-     }
+        {
+            "udur": 300,
+            "id": 0,
+            "cmt": "",
+            "days": 127,
+            "ctype": 50,
+            "atype": 1,
+            "ena": true,
+            "flags": 0,
+            "cexpr": "M6.soc > 60"
+        },
+        {
+            "udur": 300,
+            "id": 1,
+            "cmt": "Set charging current to maximum of PV surplus or 6A",
+            "days": 127,
+            "ctype": 51,
+            "atype": 0,
+            "ena": true,
+            "flags": 0,
+            "aexpr": "max(surplus_pcur, 6000)"
+        }
     ]
-   }
+}

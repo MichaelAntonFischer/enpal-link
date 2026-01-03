@@ -11,7 +11,7 @@
             "atype": 1,
             "ena": true,
             "flags": 2,
-            "cexpr": "M7.soc > 60"
+            "cexpr": "M6.soc > 60"
         },
         {
             "udur": 0,
