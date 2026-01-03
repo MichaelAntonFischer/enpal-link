@@ -1,9 +1,9 @@
 {
   "rtype": 1,
-  "mtype": 4,
+  "mtype": 1,
   "name": "Enpal Battery Data Meter",
   "manufacturer": "Enpal",
-  "dev_type": "enpal_battery_storage",
+  "dev_type": "enpal_battery_data",
   "delay_accumulated": false,
   "type_designation": {
     "address": "",
