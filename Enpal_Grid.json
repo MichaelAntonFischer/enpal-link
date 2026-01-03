@@ -1,8 +1,9 @@
 {
   "rtype": 1,
+  "mtype": 1,
   "name": "Enpal Grid Power Meter",
   "manufacturer": "Enpal",
-  "dev_type": 1,
+  "dev_type": "enpal_grid_meter",
   "delay_accumulated": false,
   "type_designation": {
     "address": "",

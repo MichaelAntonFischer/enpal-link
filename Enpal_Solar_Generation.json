@@ -1,8 +1,9 @@
 {
   "rtype": 1,
+  "mtype": 2,
   "name": "Enpal Solar Generation vMeter",
   "manufacturer": "Enpal",
-  "dev_type": 2,
+  "dev_type": "enpal_solar_inverter",
   "delay_accumulated": false,
   "type_designation": {
     "address": "",
