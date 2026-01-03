@@ -1,6 +1,6 @@
 {
     "name": "Solarladen Nacht",
-    "set_id": "2",
+    "set_id": "4",
     "charging_rules": [
         {
             "udur": 0,
